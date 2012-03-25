@@ -1,0 +1,10 @@
+CLIENT DEPENDENCIES
+watchdog
+	pip install watchdog
+pycrypto
+	https://www.dlitz.net/software/pycrypto/
+
+Probably built-in dependencies
+shutil
+pathtools
+pickle
