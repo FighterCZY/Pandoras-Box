@@ -26,16 +26,19 @@ def myViewFunc(v):
 
 g = Group('FooBar')
 g.RegisterHandler(0, IsisDelegate[int](myfunc))
-g.RegisterHandler(1, IsisDelegate[double](myRfunc))
+g.RegisterHandler(1, IsisDelegate[float](myRfunc))
 g.RegisterViewHandler(ViewHandler(myViewFunc))
 g.Join()
 g.Send(0, 17)
 res = []
 nr = g.Query(Group.ALL, 1, 98.8, EOLMarker(), res);
 print('After Query got ' + nr.ToString() + ' results: ', res)
+res2 = []
+nr = g.Query(Group.ALL, 0, 98, EOLMarker(), res2);
+print('After Query got ' + nr.ToString() + ' results: ', res2)
 
-IsisSystem.WaitForever()
-t = threading.Thread()
+
+t = threading.Thread(target=IsisSystem.WaitForever)
 t.daemon = True
 t.start()
 print('Hello world')
