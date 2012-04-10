@@ -1,6 +1,7 @@
 import threading
 import clr
 import hashlib
+import os
 
 # add ISIS
 clr.AddReference('isis2.dll')
@@ -16,22 +17,40 @@ print('Isis started')
 
 g = Group('FooBar')
 
-# Return true if a valid put, false otherwise
-# Check signature of message before putting into a restricted namespace
-def verifyPut(key, value):
-   parts = str(key).split('/')
-   if parts[0] == 'keys':
-       return False #IMPLEMENT ME
-   elif parts[0] == 'files':
-       return False #IMPLEMENT ME
-   elif parts[0] == 'data':
-       hex = hashlib.sha1(value).hexdigest()
-       # Ensure that the location is a sha1 of the value
-       return parts[1] == hex
-   else:
-       return False
-g.DHTEnable(1, 1, 1, DHTVerifyPut(verifyPut)) # For debug only
-#g.DHTEnable(3, 6, 6, DHTVerifyPut(verifyPut)) # For production testing
+DHTDict = dict()
+def DHTWriterMethod(key, value):
+    parts = str(key).split('/')
+    if parts[0] == 'keys':
+        DHTDict[key] = value
+    elif parts[0] == 'files':
+        return #IMPLEMENT ME
+    elif parts[0] == 'data':
+        hex = hashlib.sha1(value).hexdigest()
+        # Ensure that the location is a sha1 of the value
+        if parts[1] == hex:
+            # Create directory if does't exist
+            dir = os.path.dirname(key)
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            with open(str(key), 'w') as f:
+                f.write(str(value))
+
+def DHTReaderMethod(key):
+    parts = str(key).split('/')
+    if parts[0] == 'keys':
+        return DHTDict.get(key)
+    elif parts[0] == 'files':
+        return #IMPLEMENT ME
+    elif parts[0] == 'data':
+        try:
+            with open(str(key), 'r') as f:
+                return f.read()
+        except IOError:
+            return null
+g.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod))
+
+g.DHTEnable(1, 1, 1) # For debug only
+#g.DHTEnable(3, 6, 6) # For production testing
 
 
 def myfunc(i):

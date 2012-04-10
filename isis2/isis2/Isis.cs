@@ -5989,6 +5989,35 @@ namespace Isis
             DHTEnable(ReplicationFactor, ExpectedGroupSize, MinimumGroupSize, (DHTVerifyPut)delegate(object key, object value) { return true; });
         }
 
+        public delegate void DHTPutMethod(object key, object value);
+        public delegate object DHTGetMethod(object key);
+
+        internal DHTPutMethod DHTWriterMethod = delegate(object key, object value)
+        {
+            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                Isis.WriteLine("DHT_PUT: kvp=<" + key + "::" + value + ">");
+            if (DHTContents.ContainsKey(key))
+                DHTContents.Remove(key);
+            DHTContents.Add(key, value);
+        };
+        internal DHTGetMethod DHTReaderMethod = delegate(object key)
+        {
+            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                Isis.WriteLine("DHT_GET: key=<" + key + ">" + ((DHTContents.ContainsKey(key) ? " found (value=" + DHTContents[key] + ")" : " not found")));
+            if (DHTContents.ContainsKey(key))
+                return DHTContents[key];
+            else
+                return null;
+        };
+
+        public void SetDHTPersistenceMethods(DHTPutMethod writerMethod, DHTGetMethod readerMethod)
+        {
+            if (writerMethod != null)
+                DHTWriterMethod = writerMethod;
+            if (readerMethod != null)
+                DHTReaderMethod = readerMethod;
+        }
+
         public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize, DHTVerifyPut verifyPut)
         {
             if (myDHTBinSize != 0)
@@ -6017,11 +6046,7 @@ namespace Isis
                     // Check to make sure the put validates
                     if (verifyPut(key, value))
                     {
-                        if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                            Isis.WriteLine("DHT_PUT: kvp=<" + key + "::" + value + ">");
-                        if (DHTContents.ContainsKey(key))
-                            DHTContents.Remove(key);
-                        DHTContents.Add(key, value);
+                        DHTWriterMethod(key, value);
                     }
                 }
             });
@@ -6033,12 +6058,7 @@ namespace Isis
                 int khash = key.GetHashCode();
                 using (new LockAndElevate(DHTLock))
                 {
-                    if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                        Isis.WriteLine("DHT_GET: key=<" + key + ">" + ((DHTContents.ContainsKey(key) ? " found (value=" + DHTContents[key] + ")" : " not found")));
-                    if (DHTContents.ContainsKey(key))
-                        doReply(DHTContents[key]);
-                    else
-                        doReply(new byte[0]);
+                    doReply(DHTReaderMethod(key) ?? new byte[0]);
                 }
             });
             myDHTBinSize = ReplicationFactor;
