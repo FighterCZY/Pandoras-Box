@@ -1,12 +1,26 @@
+import threading
 import clr
+
+# add ISIS
 clr.AddReference('isis2.dll')
+from System import Environment
+Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
+# add your comma separated list of hosts here
+Environment.SetEnvironmentVariable("ISIS_HOSTS", "Abigail")
 import Isis
 from Isis import *
 
-import threading
-
 IsisSystem.Start()
 print('Isis started')
+
+g = Group('FooBar')
+
+# Return true if a valid put, false otherwise
+def verifyPut(key, value):
+   return False
+g.DHTEnable(1, 1, 1, DHTVerifyPut(verifyPut)) # For debug only
+#g.DHTEnable(3, 6, 6, verifyPut) # For production testing
+
 
 def myfunc(i):
     print('Hello from myfunc with i=' + i.ToString())
@@ -24,7 +38,6 @@ def myViewFunc(v):
         print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
     return
 
-g = Group('FooBar')
 g.RegisterHandler(0, IsisDelegate[int](myfunc))
 g.RegisterHandler(1, IsisDelegate[float](myRfunc))
 g.RegisterViewHandler(ViewHandler(myViewFunc))
@@ -37,6 +50,8 @@ res2 = []
 nr = g.Query(Group.ALL, 0, 98, EOLMarker(), res2);
 print('After Query got ' + nr.ToString() + ' results: ', res2)
 
+g.DHTPut("abc", "123")
+print g.DHTGet("abc")
 
 t = threading.Thread(target=IsisSystem.WaitForever)
 t.daemon = True

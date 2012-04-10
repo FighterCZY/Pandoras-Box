@@ -274,6 +274,14 @@ namespace Isis
     public delegate void durabilityMethod(Msg m);
 
     /// <summary>
+    /// Type signature for verifying a DHT PUT request
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="val"></param>
+    /// <returns>If true, allow a DHT PUT, otherwise do nothing.</returns>
+    public delegate bool DHTVerifyPut(object key, object val);
+
+    /// <summary>
     /// Signature for the Isis logging callback
     /// </summary>
     /// <param name="LEvent">Event types, as defined in Group</param>
@@ -5978,6 +5986,11 @@ namespace Isis
         /// but remember to use reasonable values later when your group will have more than 1 member.</remarks>
         public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize)
         {
+            DHTEnable(ReplicationFactor, ExpectedGroupSize, MinimumGroupSize, (DHTVerifyPut)delegate(object key, object value) { return true; });
+        }
+
+        public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize, DHTVerifyPut verifyPut)
+        {
             if (myDHTBinSize != 0)
                 throw new IsisException("Can't call DHTEnable more than once for the same group");
             myDHTMinSize = MinimumGroupSize;
@@ -6001,11 +6014,15 @@ namespace Isis
                 }
                 using (new LockAndElevate(DHTLock))
                 {
-                    if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                        Isis.WriteLine("DHT_PUT: kvp=<" + key + "::" + value + ">");
-                    if (DHTContents.ContainsKey(key))
-                        DHTContents.Remove(key);
-                    DHTContents.Add(key, value);
+                    // Check to make sure the put validates
+                    if (verifyPut(key, value))
+                    {
+                        if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                            Isis.WriteLine("DHT_PUT: kvp=<" + key + "::" + value + ">");
+                        if (DHTContents.ContainsKey(key))
+                            DHTContents.Remove(key);
+                        DHTContents.Add(key, value);
+                    }
                 }
             });
             doRegister(Isis.IM_DHT_GET, (IMRemDel)delegate(byte[] kba)
