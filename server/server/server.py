@@ -2,12 +2,17 @@ import threading
 import clr
 import hashlib
 import os
+import array
+import cPickle as pickle # alternatively pickle
 
 # add ISIS
 clr.AddReference('isis2.dll')
 from System import Environment
+#Environment.SetEnvironmentVariable("ISIS_TCP_ONLY", "true")
 Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
-# add your comma separated list of hosts here
+# Silence output
+Environment.SetEnvironmentVariable("ISIS_MUTE", "true")
+# add comma separated list of hosts here (master servers)
 Environment.SetEnvironmentVariable("ISIS_HOSTS", "Abigail")
 import Isis
 from Isis import *
@@ -15,12 +20,14 @@ from Isis import *
 IsisSystem.Start()
 print('Isis started')
 
+
 g = Group('FooBar')
 
+# this is already locked by ISIS
 DHTDict = dict()
 def DHTWriterMethod(key, value):
     parts = str(key).split('/')
-    if parts[0] == 'keys':
+    if parts[0] == 'users':
         DHTDict[key] = value
     elif parts[0] == 'files':
         return #IMPLEMENT ME
@@ -37,7 +44,7 @@ def DHTWriterMethod(key, value):
 
 def DHTReaderMethod(key):
     parts = str(key).split('/')
-    if parts[0] == 'keys':
+    if parts[0] == 'users':
         return DHTDict.get(key)
     elif parts[0] == 'files':
         return #IMPLEMENT ME
@@ -60,17 +67,52 @@ def myRfunc(r):
     print('Hello from myRfunc with r=' + r.ToString())
     g.Reply(-1)
     return
+
+#g.RegisterHandler(0, IsisDelegate[int](myfunc))
+#g.RegisterHandler(1, IsisDelegate[float](myRfunc))
+
+
+REGISTER_USER = 0
+SEND_USERS = 1
+# check that a username is valid and not taken
+users_lock = threading.Lock()
+users = set()
+# return True if able to register user
+def registerUser(username, publickey):
+    with users_lock:
+        in_table = username in users
+    if in_table:
+        g.Reply(False)
+    else:
+        # add username and bytes used
+        g.DHTPut('users/'+username, (publickey, 0))
+        with users_lock:
+            users.add(username)
+        g.Reply(True)
+g.RegisterHandler(REGISTER_USER, IsisDelegate[str, str](registerUser))
+
+def sendUsers(serial):
+    # because isis uses a weird serializer Y U NO PROTOCOLBUFFER/THRIFT?!?!
+    set = pickle.loads(serial)
+    with users_lock:
+        # do an update in case we got some stuff before the master replied
+        users.update(set)
+    return
+g.RegisterHandler(SEND_USERS, IsisDelegate[str](sendUsers))
+
 def myViewFunc(v):
-    print('New view: ' + v.ToString())
+    if v.IAmLeader():
+        print('New view: ' + v.ToString())
     print('My rank = ' + v.GetMyRank().ToString())
     for a in v.joiners:
         print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+        # send the new joiner the userstable
+        with users_lock:
+            data = pickle.dumps(users)
+        g.P2PSend(a, SEND_USERS, data)
     for a in v.leavers:
         print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
     return
-
-g.RegisterHandler(0, IsisDelegate[int](myfunc))
-g.RegisterHandler(1, IsisDelegate[float](myRfunc))
 g.RegisterViewHandler(ViewHandler(myViewFunc))
 g.Join()
 # g.Send(0, 17)

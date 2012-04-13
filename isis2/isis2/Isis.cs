@@ -274,14 +274,6 @@ namespace Isis
     public delegate void durabilityMethod(Msg m);
 
     /// <summary>
-    /// Type signature for verifying a DHT PUT request
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="val"></param>
-    /// <returns>If true, allow a DHT PUT, otherwise do nothing.</returns>
-    public delegate bool DHTVerifyPut(object key, object val);
-
-    /// <summary>
     /// Signature for the Isis logging callback
     /// </summary>
     /// <param name="LEvent">Event types, as defined in Group</param>
@@ -5970,25 +5962,6 @@ namespace Isis
         internal bool[,] DHTHMaps;
         internal bool[] DHTAgNonEmpty;
 
-        /// <summary>
-        /// Puts the current group into DHT mode. 
-        /// </summary>
-        /// <param name="ReplicationFactor">Requested data replication factor</param>
-        /// <param name="ExpectedGroupSize">Your estimate of the typical size of this group (N)</param>
-        /// <param name="MinimumGroupSize">The smallest group size at which the DHT will accept DHTPut/DHTGet commands</param>
-        /// <remarks>If the replication factor is too small, you run the risk that our random hashing scheme could leave some affinity
-        /// group with too few, or too many members.  Too many is not a problem, but if an affinity group has too few members you can see
-        /// failures that cause data to be completely lost (e.g. if the only replica fails).  Thus when you ask for a replication factor of,
-        /// say, 3 this is a <it>target</it>, not the minimum that might be used.  We haven't had problems with factors of 5 or more in groups of 25 or more members.
-        /// 
-        /// To put the DHT into debug mode for developing your application, you can use ReplicationFactor, ExpectedGroupSize and MinimumGroupSize all set to 1,
-        /// and then test with just 1 or 2 members in the group,
-        /// but remember to use reasonable values later when your group will have more than 1 member.</remarks>
-        public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize)
-        {
-            DHTEnable(ReplicationFactor, ExpectedGroupSize, MinimumGroupSize, (DHTVerifyPut)delegate(object key, object value) { return true; });
-        }
-
         public delegate void DHTPutMethod(object key, object value);
         public delegate object DHTGetMethod(object key);
 
@@ -6018,7 +5991,21 @@ namespace Isis
                 DHTReaderMethod = readerMethod;
         }
 
-        public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize, DHTVerifyPut verifyPut)
+        /// <summary>
+        /// Puts the current group into DHT mode. 
+        /// </summary>
+        /// <param name="ReplicationFactor">Requested data replication factor</param>
+        /// <param name="ExpectedGroupSize">Your estimate of the typical size of this group (N)</param>
+        /// <param name="MinimumGroupSize">The smallest group size at which the DHT will accept DHTPut/DHTGet commands</param>
+        /// <remarks>If the replication factor is too small, you run the risk that our random hashing scheme could leave some affinity
+        /// group with too few, or too many members.  Too many is not a problem, but if an affinity group has too few members you can see
+        /// failures that cause data to be completely lost (e.g. if the only replica fails).  Thus when you ask for a replication factor of,
+        /// say, 3 this is a <it>target</it>, not the minimum that might be used.  We haven't had problems with factors of 5 or more in groups of 25 or more members.
+        /// 
+        /// To put the DHT into debug mode for developing your application, you can use ReplicationFactor, ExpectedGroupSize and MinimumGroupSize all set to 1,
+        /// and then test with just 1 or 2 members in the group,
+        /// but remember to use reasonable values later when your group will have more than 1 member.</remarks>
+        public void DHTEnable(int ReplicationFactor, int ExpectedGroupSize, int MinimumGroupSize)
         {
             if (myDHTBinSize != 0)
                 throw new IsisException("Can't call DHTEnable more than once for the same group");
@@ -6043,11 +6030,7 @@ namespace Isis
                 }
                 using (new LockAndElevate(DHTLock))
                 {
-                    // Check to make sure the put validates
-                    if (verifyPut(key, value))
-                    {
-                        DHTWriterMethod(key, value);
-                    }
+                    DHTWriterMethod(key, value);
                 }
             });
             doRegister(Isis.IM_DHT_GET, (IMRemDel)delegate(byte[] kba)
