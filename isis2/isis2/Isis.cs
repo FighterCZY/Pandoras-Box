@@ -1,4 +1,4 @@
-// Isis2 System, V1.1.$Rev: 827 $, Developed by Kenneth P. Birman, (c) 2010, 2011. all rights reserved.
+// Isis2 System, V1.1.$Rev: 813 $, Developed by Kenneth P. Birman, (c) 2010, 2011. all rights reserved.
 //       This code is subject to copyright and other intellectual property restrictions and
 //       may be used only under license from Dr. Birman or his designated agents.
 //
@@ -378,106 +378,6 @@ namespace Isis
     /// <ignore>
     /// </ignore>
     public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13, t14 a14);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13, t14 a14, t15 a15);
-
-    internal delegate void VoidNoArg();
-
-    internal class Callable
-    {
-        internal int nParams;
-        internal Type[] ptypes;
-        internal Delegate hisCb;
-        internal Delegate cb;
-
-        internal Callable(Delegate hisCb)
-        {
-            this.hisCb = hisCb;
-            ParameterInfo[] pi = hisCb.Method.GetParameters();
-            ptypes = pi.Select(p => p.ParameterType).ToArray();
-            nParams = ptypes.Length;
-            /* if (nParams == 0)
-                cb = Delegate.CreateDelegate(typeof(VoidNoArg), hisCb.Target, hisCb.Method, false);
-            else if (nParams <= 16)
-                cb = Delegate.CreateDelegate(System.Linq.Expressions.Expression.GetActionType(ptypes), hisCb.Target, hisCb.Method, false); */
-        }
-
-        internal void doUpcall(object[] args)
-        {
-            if (args.Length != nParams)
-                throw new ArgumentException("Argument count must match number of parameters");
-            if (cb != null)
-                switch (nParams)
-                {
-                    case 0:
-                        ((dynamic)cb).Invoke();
-                        break;
-                    case 1:
-                        ((dynamic)cb).Invoke((dynamic)args[0]);
-                        break;
-                    case 2:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1]);
-                        break;
-                    case 3:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2]);
-                        break;
-                    case 4:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3]);
-                        break;
-                    case 5:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4]);
-                        break;
-                    case 6:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5]);
-                        break;
-                    case 7:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6]);
-                        break;
-                    case 8:
-                        ((dynamic)cb)((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7]);
-                        break;
-                    case 9:
-                        ((dynamic)cb)((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8]);
-                        break;
-                    case 10:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9]);
-                        break;
-                    case 11:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10]);
-                        break;
-                    case 12:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[1]);
-                        break;
-                    case 13:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12]);
-                        break;
-                    case 14:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12], (dynamic)args[13]);
-                        break;
-                    case 15:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12], (dynamic)args[13], (dynamic)args[14]);
-                        break;
-                }
-            else
-                hisCb.DynamicInvoke((dynamic)args);
-        }
-    }
 
     /// <summary>
     /// Designates a class as suitable for automatic marshalling via Isis.
@@ -1133,13 +1033,11 @@ namespace Isis
                         ISIS_NETMASK = (string)de.Value;
                     else if (de.Key.Equals("ISIS_SUBNET"))
                         ISIS_SUBNET = (string)de.Value;
-                    else if (de.Key.Equals("ISIS_PORTNOp"))
+                    else if (de.Key.Equals("ISIS_DEFAULT_PORTNOa"))
                     {
                         ISIS_DEFAULT_PORTNOp = int.Parse((string)de.Value);
                         ISIS_DEFAULT_PORTNOa = ISIS_DEFAULT_PORTNOp + 1;
                     }
-                    else if (de.Key.Equals("ISIS_PORTNOa"))
-                        throw new IsisException("ISIS_PORTNOa cannot be directly changed");
                     else if (de.Key.Equals("ISIS_AESKEY"))
                     {
                         Group.doInitializeAes(out ISIS_AES);
@@ -1192,7 +1090,7 @@ namespace Isis
                     {
                         my_logstream = new FileStream(fname, FileMode.CreateNew);
                         ISIS_LOG_CREATED = true;
-                        string rev = "$Rev: 827 $";
+                        string rev = "$Rev: 813 $";
                         int idx;
                         if ((idx = rev.IndexOf(' ')) != -1)
                         {
@@ -1354,8 +1252,8 @@ namespace Isis
         private static byte[] byteVecParse(string arg)
         {
             int idx = 0;
-            if (arg.Length != (ISIS_AES.KeySize * 2))
-                throw new IsisException("ISIS_AESKEY: argument has incorrect length (should be a " + (ISIS_AES.KeySize) + "-byte/" + (ISIS_AES.KeySize * 8) + "-bit vector, encoded as a hexstring");
+            if (arg.Length != 32)
+                throw new IsisException("ISIS_AESKEY: argument has incorrect length (should be a 32-byte/256-bit vector, encoded as a hexstring");
             byte[] bvec = new byte[ISIS_AES.KeySize];
             for (int off = 0; off < bvec.Length; off++)
             {
@@ -3403,10 +3301,7 @@ namespace Isis
     /// </summary>
     public static class IsisSystem
     {
-        /// <summary>
-        /// A flag application threads can monitor to sense Isis shutdown
-        /// </summary>
-        public static bool IsisActive = false;
+        internal static bool IsisActive = false;
         internal static bool IsisAlreadyRan = false;
         internal static bool IsisRestarting = false;
         internal static int IsisJoinCounter = 0;
@@ -4180,7 +4075,7 @@ namespace Isis
             int idx = 0;
             foreach (Group.CallBack cb in mh.hList)
             {
-                ParameterInfo[] pi = cb.cbProc.hisCb.GetType().GetMethod("Invoke").GetParameters();
+                ParameterInfo[] pi = cb.cbProc.GetType().GetMethod("Invoke").GetParameters();
                 string s = "";
                 foreach (ParameterInfo pinfo in pi)
                     s += pinfo.ParameterType + ":";
@@ -4627,14 +4522,14 @@ namespace Isis
         public class CallBack
         {
             internal bool withLock;
-            internal Callable cbProc;
+            internal Delegate cbProc;
 
             /// <exclude>
             /// <summary>
             /// Callback constructor, internal
             /// </summary>
             /// </exclude>
-            public CallBack(bool wl, Delegate d) { withLock = wl; cbProc = new Callable(d); }
+            public CallBack(bool wl, Delegate d) { withLock = wl; cbProc = d; }
         }
 
         internal class VHCallBack
@@ -5906,11 +5801,7 @@ namespace Isis
         private void EndStateXfer()
         {
             using (new LockAndElevate(GroupFlagsLock))
-            {
-                if ((flags & G_NEEDSTATEXFER) != 0)
-                    xferWait.Release();
                 flags &= ~G_NEEDSTATEXFER;
-            }
             ReplayToDo();
         }
 
@@ -6109,9 +6000,6 @@ namespace Isis
                 DHTKeys = keysMethod;
         }
 
-        public delegate int DHTAffinityGroup(object o);
-        internal DHTAffinityGroup GetAffinityGroup;
-
         /// <summary>
         /// Puts the current group into DHT mode. 
         /// </summary>
@@ -6136,10 +6024,6 @@ namespace Isis
                 myDHTInDebugMode = true;
             else if (ReplicationFactor < 3 || myDHTBinSize < 2)
                 throw new IsisException("DHTEnable: Replication factor must be >= 3 and (ExpectedGroupSize / ReplicationFactor) must be > 1");
-            GetAffinityGroup = delegate(object o)
-            {
-                return o.GetHashCode() % myDHTBinSize;
-            };
             doRegister(Isis.IM_DHT_PUT, (IMAddDel)delegate(byte[] kvp)
             {
                 object[] obs = Msg.BArrayToObjects(kvp);
@@ -6207,6 +6091,16 @@ namespace Isis
                 for (int i = 0; i < keys.Length; i++)
                     DHTWriter(keys[i], values[i]);
             });
+        }
+
+        private int GetAffinityGroup(Address a)
+        {
+            return a.GetHashCode() % myDHTBinSize;
+        }
+
+        private int GetAffinityGroup(long key)
+        {
+            return key.GetHashCode() % myDHTBinSize;
         }
 
         // Create something that looks like the group address but indicates the AffinityGroup via the port numbers
@@ -6350,203 +6244,6 @@ namespace Isis
         /// <returns>The value from the (key,value) pair</returns>
         /// <remarks>DHT operations are reliable but not totally ordered, hence DHTRemove for a key shouldn't be issued concurrently with DHTPut operations using the identical key.</remarks>
         public void DHTRemove(object key)
-        {
-            DHTPut(key, new byte[0]);
-        }
-
-
-        // need to lock this thing
-        internal LinkedList<Address> DHT2Ring = new LinkedList<Address>();
-        // add in sorted order
-        internal void DHT2AddToRing(Address a)
-        {
-            if (DHT2Ring.Count == 0)
-            {
-                DHT2Ring.AddFirst(a);
-            }
-            else
-            {
-                LinkedListNode<Address> start = DHT2Ring.First;
-                LinkedListNode<Address> cur = start.Next;
-                while (start != cur && a.GetHashCode() > cur.Value.GetHashCode())
-                {
-                    cur = cur.Next;
-                }
-                DHT2Ring.AddBefore(cur, a);
-            }
-
-        }
-        // Gets the chain of addresses for a hash value
-        internal Address[] DHT2GetAddress(int hash, int length)
-        {
-            Address[] output = new Address[length];
-            LinkedListNode<Address> start = DHT2Ring.First;
-            LinkedListNode<Address> cur = start.Next;
-            while (start != cur && hash > cur.Value.GetHashCode())
-            {
-                cur = cur.Next;
-            }
-            for (int i = 0; i < length; i++)
-            {
-                output[i] = cur.Value;
-                cur = cur.Next;
-            }
-            return output;
-        }
-
-        internal delegate void DHT2ChkptLoader(byte[] aba);
-        /// <summary>
-        /// A better DHT using consistent hashing and chain replication
-        /// </summary>
-        /// <param name="ReplicationFactor"></param>
-        public void DHT2Enable(int ReplicationFactor)
-        {
-            if (myDHTBinSize != 0)
-                throw new IsisException("Can't call DHTEnable more than once for the same group");
-            myDHTBinSize = ReplicationFactor;
-            doRegister(Isis.IM_DHT_PUT, (IMAddDel)delegate(byte[] kvp)
-            {
-                object[] obs = Msg.BArrayToObjects(kvp);
-                object key = obs[0];
-                object value = obs[1];
-                // Filter if not for my affinity group; won't occur in TCP_ONLY mode
-                if (!DHT2GetAddress(key.GetHashCode(), ReplicationFactor).Contains(Isis.my_address))
-                {
-                    if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                        Isis.WriteLine("DHT_PUT hander: filtering and ignoring a put to a different affinity group");
-                    return;
-                }
-                using (new LockAndElevate(DHTLock))
-                {
-                    DHTWriter(key, value);
-                }
-            });
-            doRegister(Isis.IM_DHT_GET, (IMRemDel)delegate(byte[] kba)
-            {
-                if ((flags & G_SECURE) != 0)
-                    kba = decipherBuf(kba);
-                object key = Msg.BArrayToObjects(kba)[0];
-                using (new LockAndElevate(DHTLock))
-                {
-                    doReply(DHTReader(key) ?? new byte[0]);
-                }
-            });
-            ViewHandlers += (ViewHandler)delegate(View v)
-            {
-                // add a new node to ring, transfer appropiate files to node and delete some stuff (maybe)
-                // remove a node from ring, get data from another node about new stuff
-            };
-            // send DHT2Ring
-            RegisterMakeChkpt((ChkptMaker)delegate(View v)
-            {
-                Address[] addresses = DHT2Ring.ToArray();
-                SendChkpt(Msg.toBArray(addresses));
-                EndOfChkpt();
-            });
-            // load DHT2Ring
-            RegisterLoadChkpt((DHT2ChkptLoader)delegate(byte[] aba)
-            {
-                Address[] addresses = (Address [])Msg.BArrayToObjects(aba);
-                DHT2Ring = new LinkedList<Address>(addresses);
-            });
-        }
-
-        /// <summary>
-        /// Uses the current group as a DHT and stores a new (key,value) pair, which overwrites any previous one.  
-        /// </summary>
-        /// <param name="key">key for the object being stored</param>
-        /// <param name="value">value of that object</param>
-        /// <remarks>DHT put operations aren't totally ordered, hence concurrent Add requests for the same key leave the DHT in an inconsistent state.</remarks>
-        public void DHT2Put(object key, object value)
-        {
-            if (myDHTBinSize == 0)
-                throw new IsisException("DHTPut: must first call DHTEnable");
-            int khash = key.GetHashCode();
-            FlowControl.FCBarrierCheck();
-            byte[] ba = Msg.toBArray(key, value);
-            Address[] addresses = DHT2GetAddress(khash, myDHTBinSize);
-            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                Isis.WriteLine("Application called DHTPut with key=" + key + ", value=" + value + ", converts to " + ba.Length + " byte vector");
-            Address last = null;
-            for (int i = 0; i < addresses.Length; i++)
-            {
-                if (last == addresses[i])
-                    break;
-                last = addresses[i];
-                P2PSend(addresses[i], Isis.IM_DHT_PUT, ba);
-            }
-        }
-
-
-        /// <summary>
-        /// Treats the the current group as a DHT and retrieves an object by key
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns>The value from the (key,value) pair</returns>
-        public object DHT2Get(object key)
-        {
-            if (myDHTBinSize == 0)
-                throw new IsisException("DHTPut: must first call DHTEnable");
-            int khash = key.GetHashCode();
-            byte[] ba = Msg.toBArray(key);
-            if ((flags & G_SECURE) != 0)
-                ba = cipherBuf(ba);
-            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
-                Isis.WriteLine("Application called DHTGet with key=" + key);
-
-            int N = theView.members.Length, myBase = theView.GetMyRank(), startAt = rand.Next(N), log2N = log2(N), kgrp = GetAffinityGroup(khash);
-
-            // TODO: Finish writing this
-            Address whoToAsk = null;
-            Address dontAsk = null;
-            // Note: this logic only makes sense for at most 2 tries!
-            for (int retry = 0; retry < 2 && dontAsk != Isis.my_address; retry++)
-            {
-                try
-                {
-                    if (GetAffinityGroup(Isis.my_address) == kgrp)
-                        whoToAsk = Isis.my_address;
-                    else
-                    {
-                        // First check and see if there happens to be a 1-hop neighbor we could ask
-                        for (int n = 0; whoToAsk == null && n < log2N; n++)
-                            if (GetAffinityGroup(theView.members[(myBase + (1 << n)) % N]) == kgrp && (dontAsk == null || !theView.members[(myBase + (1 << n)) % N].Equals(dontAsk)))
-                                whoToAsk = theView.members[(myBase + (1 << n)) % N];
-                    }
-
-                    // If no luck, check starting at some random location and just take anyone in the right affinity group
-                    for (int n = 0; whoToAsk == null && n < theView.members.Length; n++)
-                        if (GetAffinityGroup(theView.members[(startAt + n) % N]) == kgrp && (dontAsk == null || !theView.members[(startAt + n) % N].Equals(dontAsk)))
-                            whoToAsk = theView.members[(startAt + n) % N];
-
-                    if (whoToAsk == null)
-                        throw new IsisException("DHT can't find anyone to ask about key=" + key);
-
-                    byte[] answer = P2PQueryToBarray(whoToAsk, Isis.IM_DHT_GET, ba);
-                    if (answer.Length == 0)
-                    {
-                        // Occurs if this dest. failed while waiting for reply from him
-                        dontAsk = whoToAsk;
-                        continue;
-                    }
-                    return Msg.BArrayToObjects(answer)[0];
-                }
-                catch (IsisAbortReplyException)
-                {
-                    Isis.WriteLine("DHTGet: AbortReplyException!");
-                    dontAsk = whoToAsk;
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Removes the value associated with the key.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns>The value from the (key,value) pair</returns>
-        /// <remarks>DHT operations are reliable but not totally ordered, hence DHTRemove for a key shouldn't be issued concurrently with DHTPut operations using the identical key.</remarks>
-        public void DHT2Remove(object key)
         {
             DHTPut(key, new byte[0]);
         }
@@ -7672,13 +7369,8 @@ namespace Isis
             bool hadFirstView = HasFirstView;
             if ((IsisSystem.Debug & (IsisSystem.MSGIDS | IsisSystem.VIEWCHANGE | IsisSystem.STARTSEQ)) != 0)
                 Isis.WriteLine("ENTERING NEWVIEW[" + calledFrom + "]: Group " + gname + ",  with new view=" + v);
-            if (v.viewid == 0)
-                using (new LockAndElevate(GroupFlagsLock))
-                {
-                    if ((flags & G_NEEDSTATEXFER) != 0)
-                        xferWait.Release();
-                    flags &= ~G_NEEDSTATEXFER;
-                }
+            using (new LockAndElevate(Lock))
+                flags &= ~G_NEEDSTATEXFER;
             if (isTrackingProxy)
             {
                 // These are used only by the ORACLE to track groups on behalf of their members
@@ -7688,8 +7380,6 @@ namespace Isis
                     theView = v;
                     nextMsgid = 0;
                 }
-                if (!hadFirstView && v.joiners.Length == 0)
-                    v.joiners = new Address[] { Isis.my_address };
                 HasFirstView = true;
                 replayStash(this);
                 List<byte[]> ae = IPMCArrivedEarly;
@@ -7907,10 +7597,10 @@ namespace Isis
         }
 
         /// <summary>
-        /// This API is used in situations where the checkpoint for a joining member must be from a source
-        /// that depends on who the joiner is.  Disabled by the Isis DHT, which has its own special choser.
+        /// This API is used only in situations where the checkpoint for a joining member must be from a source
+        /// that depends on who the joiner is.  
         /// </summary>
-        /// <param name="choser">Called in all group members who were in the prior view, returns true in the single member who will make the checkpoint</param>
+        /// <param name="choser">Called in all group members, returns true in the single member who will make the checkpoint</param>
         /// <remarks>Using this API, a group designer can control which group member is selected to send state transfers, as a function of the set of joiners.
         /// The method will be invoked in parallel at all group members as a new view is about to be installed, and each returns true or false.  The intent is
         /// that just one returns true; it will create a checkpoint, which will be sent to all the processes listed in v.joiners[].
@@ -7941,8 +7631,6 @@ namespace Isis
         /// </remarks>
         internal void RegisterChkptChoser(Delegate choser)
         {
-            if (theChkptChoser != null && theChkptChoser != ((ChkptChoser)choser))
-                throw new IsisException("RegisterChkptChoser: Attempt to register two checkpoint chosers for group <" + gname + ">");
             theChkptChoser = (ChkptChoser)choser;
         }
 
@@ -8051,7 +7739,7 @@ namespace Isis
             flags |= G_SECURE;
             InitializeMyAes();
             if ((theKey.Length << 3) != myAes.KeySize)
-                throw new ArgumentException("Key must be a byte[" + (myAes.KeySize >> 3) + "] vector");
+                throw new ArgumentException("Key must be a byte[24] vector");
             userSpecifiedKey = true;
             myAESkey = theKey;
             if (myAESkey == null || (flags & G_SECURE) == 0)
@@ -8093,8 +7781,7 @@ namespace Isis
         internal static void SetAesKey(Aes theAes, byte[] theAesKey)
         {
             bool allZero = true;
-            int nb = (theAes.KeySize >> 3);
-            for (int b = 0; b < nb; b++)
+            for (int b = 0; b < 24; b++)
                 if (theAesKey[b] != 0)
                     allZero = false;
             if (allZero)
@@ -9025,9 +8712,16 @@ namespace Isis
 
         private static bool TypeMatch(object[] obs, CallBack cb)
         {
-            if (cb.cbProc.ptypes.Length != obs.Length - 1) return false;
-            for (int i = 0; i < cb.cbProc.ptypes.Length; i++)
-                if (obs[i + 1] == null || !obs[i + 1].GetType().Equals(cb.cbProc.ptypes[i]))
+            ParameterInfo[] pi = cb.cbProc.GetType().GetMethod("Invoke").GetParameters();
+            if (pi.Length != obs.Length - 1) return false;
+            Type[] cbSig = new Type[pi.Length];
+            for (int i = 0; i < pi.Length; i++)
+                if (obs[i + 1] == null || pi[i] == null)
+                    if (obs[i + 1] != pi[i])
+                        return false;
+                    else
+                        continue;
+                else if (obs[i + 1].GetType().Equals(pi[i].ParameterType) == false)
                     return false;
             return true;
         }
@@ -9044,9 +8738,10 @@ namespace Isis
                 if (mh != null)
                     foreach (CallBack cb in mh.hList)
                     {
+                        ParameterInfo[] pi = cb.cbProc.GetType().GetMethod("Invoke").GetParameters();
                         string s = "[" + ridx++ + "]";
-                        foreach (Type pt in cb.cbProc.ptypes)
-                            s += pt + ":";
+                        foreach (ParameterInfo pinfo in pi)
+                            s += pinfo.ParameterType + ":";
                         sigs.Add(s);
                     }
             Group.tokenInfo theToken;
@@ -9225,8 +8920,6 @@ namespace Isis
             Isis.NodeHasFailed(who, "(From app-level HasFailed)", false);
         }
 
-        internal Semaphore xferWait = new Semaphore(0, Int32.MaxValue);
-
         private static void JoinWait(Group[] groups)
         {
             if (IsisSystem.IsisActive == false)
@@ -9248,10 +8941,9 @@ namespace Isis
                     if (g.theView.GetMyRank() == -1)
                         throw new IsisException("JoinWait barrier returned but I'm not in " + Address.ToString(g.theView.members) + " (gaddr " + g.gaddr + ")\r\n" + IsisSystem.GetState());
                 }
-                if ((g.flags & G_NEEDSTATEXFER) != 0)
-                    g.xferWait.WaitOne();
             }
         }
+
         internal class vGroup
         {
             internal Address creator;
@@ -10320,7 +10012,7 @@ namespace Isis
                     }
                     else if (m.vid == Msg.UNINITIALIZED)
                         SetMsgIds(m, sentByOracle, isRaw);
-                    if ((flags & G_SECURE) != 0 && (type == Msg.ISGRPP2P || type == Msg.ISRAWGRPP2P || type == Msg.FIFOCAST || type == Msg.RAWFIFOCAST || type == Msg.UNORDERED || type == Msg.ISREPLY))
+                    if ((flags & G_SECURE) != 0 && (type == Msg.ISGRPP2P || type == Msg.ISRAWGRPP2P || type == Msg.FIFOCAST || type == Msg.RAWFIFOCAST || type == Msg.UNORDERED))
                         cipherMsg(m);
                     if ((IsisSystem.Debug & (IsisSystem.MESSAGELAYER | IsisSystem.VIEWWAIT)) != 0)
                         Isis.WriteLine("ReliableSender.SendGroup to <" + gname + ">... type=" + Msg.mtypes[type] + ", Msg=" + m);
@@ -10778,7 +10470,7 @@ namespace Isis
         {
             using (new LockAndElevate(m.Lock))
             {
-                if (m.vid < 0 || m.msgid < 0 || myAes == null || m.cipherPayload != null)
+                if (m.vid < 0 || m.msgid < 1 || myAes == null || m.cipherPayload != null)
                     return;
                 m.myObs = null;
                 using (new LockAndElevate(myAesLock))
@@ -11745,18 +11437,15 @@ namespace Isis
             if ((IsisSystem.Debug & IsisSystem.REPLYWAIT) != 0)
                 Isis.WriteLine("Collected replies, list contains " + ri.rdvReplies.Count());
             if ((flags & G_SECURE) != 0)
-                DecipherReplies(ri);
+            {
+                List<byte[]> tmp = new List<byte[]>();
+                foreach (byte[] r in ri.rdvReplies)
+                    tmp.Add(decipherBuf(r));
+                ri.rdvReplies = tmp;
+            }
             if (myLoggingFcn != null)
                 myLoggingFcn(IL_QUERY, IL_DONE, Isis.my_address, mylid);
             return ri.rdvReplies;
-        }
-
-        internal void DecipherReplies(IsisRdv.RdvInfo ri)
-        {
-            List<byte[]> tmp = new List<byte[]>();
-            foreach (byte[] r in ri.rdvReplies)
-                tmp.Add(decipherBuf(r));
-            ri.rdvReplies = tmp;
         }
 
         internal class querierArgs
@@ -13288,11 +12977,7 @@ namespace Isis
                 }
                 if (m.vid == 0)
                     using (new LockAndElevate(GroupFlagsLock))
-                    {
-                        if ((flags & G_NEEDSTATEXFER) != 0)
-                            xferWait.Release();
                         flags &= ~G_NEEDSTATEXFER;
-                    }
                 if (m.vid != vid && (flags & G_ISLARGE) == 0 && (m.flags & Msg.SENTBYORACLE) == 0)
                 {
                     if (m.vid < vid)
@@ -13813,7 +13498,7 @@ namespace Isis
             incomingP2P.put(m);
         }
 
-        internal static void ReportCb(Callable ca, object[] args)
+        internal static void ReportCb(Delegate del, object[] args)
         {
             string sa = " ";
             foreach (object o in args)
@@ -13821,7 +13506,7 @@ namespace Isis
                     sa += "null, ";
                 else
                     sa += "(" + o.GetType() + " = " + o.ToString() + "), ";
-            Isis.WriteLine("Callback: " + ca.cb.Method + " with args = (" + sa + ")");
+            Isis.WriteLine("Callback: " + del.Method + " with args = (" + sa + ")");
         }
 
         internal static void ReportCb(Type t, object[] args)
@@ -13956,16 +13641,19 @@ namespace Isis
 
                 foreach (CallBack cb in toDo)
                 {
+                    MethodInfo mi;
+                    if ((mi = cb.cbProc.GetType().GetMethod("Invoke")) == null)
+                        throw new IsisException("Isis.cbaction: delegate has no Invoke method");
                     if ((IsisSystem.Debug & IsisSystem.CALLBACKS) != 0)
                         ReportCb(cb.cbProc, args);
                     long before = Isis.NOW();
                     if (cb.withLock)
                     {
                         CallBack mycb = cb;
-                        new Thread(delegate() { Thread.CurrentThread.Name = "Callback with lock"; using (new ILock(ILock.LLENTRY, gaddr)) cb.cbProc.doUpcall(args); }).Start();
+                        new Thread(delegate() { Thread.CurrentThread.Name = "Callback with lock"; using (new ILock(ILock.LLENTRY, gaddr)) mi.Invoke(mycb.cbProc, args); }).Start();
                     }
                     else
-                        cb.cbProc.doUpcall(args);
+                        mi.Invoke(cb.cbProc, args);
                     if ((IsisSystem.Debug & IsisSystem.DELAYS) != 0 && (Isis.NOW() - before) > 500)
                         Isis.WriteLine("WARNING: Callback to request " + Isis.rToString((int)obs[0]) + ", msg " + vid + ":" + msgid + " from " + sender + " took " + (Isis.NOW() - before) + "ms");
                 }
@@ -16050,8 +15738,7 @@ namespace Isis
                 {
                     if ((IsisSystem.Debug & IsisSystem.REPLYWAIT) != 0)
                         Isis.WriteLine("... a match!");
-                    using (new LockAndElevate(theRi.Lock))
-                        doGotReply(theRi, rm.dest, rm.sender, rtype, vid, msgid, enciphered, theReply);
+                    doGotReply(theRi, rm.dest, rm.sender, rtype, vid, msgid, enciphered, theReply);
                     return;
                 }
                 // Falls through if the reply just isn't expected
@@ -16414,20 +16101,10 @@ namespace Isis
             return s;
         }
 
-        internal static byte[] topSecret = new byte[] { (byte)'T', (byte)'O', (byte)'P', (byte)' ', (byte)'S', (byte)'E', (byte)'C', (byte)'R', (byte)'E', (byte)'T' };
-
         internal static void CheckLen(byte[] buffer)
         {
             if (buffer.Length > Isis.ISIS_MAXMSGLEN)
                 throw new IsisException("Trying to send an object of size " + buffer.Length + " yet Isis_MAXMSGLEN is " + Isis.ISIS_MAXMSGLEN);
-            for (int off = 0; off < buffer.Length - topSecret.Length; off++)
-            {
-                bool leak = true;
-                for (int n = 0; leak && n < topSecret.Length; n++)
-                    leak = (buffer[off + n] == topSecret[n]);
-                if (leak)
-                    throw new IsisException("About to send a TOP SECRET message in the open!");
-            }
         }
 
         internal static int getPendingP2PCount()
@@ -18646,8 +18323,6 @@ namespace Isis
             IsisRdv.rdvWait(ri, g, timeout);
             if ((IsisSystem.Debug & IsisSystem.REPLYWAIT) != 0)
                 Isis.WriteLine("QueryP2P: Collected replies, list contains " + ri.rdvReplies.Count());
-            if ((g.flags & Group.G_SECURE) != 0)
-                g.DecipherReplies(ri);
             if (ri.rdvReplies.Count() > 0)
                 return ri.rdvReplies[0];
             return new byte[0];
@@ -21086,8 +20761,11 @@ namespace Isis
                 byte code;
                 if (o == null)
                     code = NULL;
-                else if (!UserDefinedTypesList.TryGetValue(t, out code))
-                    code = UNDEF;
+                else
+                {
+                    if (!UserDefinedTypesList.TryGetValue(t, out code))
+                        code = UNDEF;
+                }
                 switch (code)
                 {
                     case NULL:
@@ -21576,21 +21254,18 @@ namespace Isis
                                 while (t.IsArray);
                             }
                             UDT udt = null;
-                            byte which = 0;
-                            bool fndT = false;
+                            byte which;
                             if (UserDefinedTypesList.TryGetValue(t, out which))
-                            {
-                                fndT = true;
                                 udt = UserDefinedTypesTable[which];
-                            }
-                            if (fndT)
+                            if (udt != null)
                             {
                                 fnd = true;
+                                int TID = udt.index;
                                 // A type registered with Isis
-                                if (isArray == false && udt != null)
+                                MethodInfo mi;
+                                mi = UserDefinedTypesTable[TID].theMarshaller;
+                                if (isArray == false)
                                 {
-                                    MethodInfo mi;
-                                    mi = udt.theMarshaller;
                                     object[] args = new object[0];
                                     if ((IsisSystem.Debug & IsisSystem.CALLBACKS) != 0)
                                         Group.ReportCb(t, o);
@@ -21600,7 +21275,7 @@ namespace Isis
                                     else
                                     {
                                         // AutoMarshalled: Generates a byte[] from the full set of public fields of the object
-                                        FieldInfo[] theFields = UserDefinedTypesTable[which].theFields;
+                                        FieldInfo[] theFields = UserDefinedTypesTable[TID].theFields;
                                         Object[] objects = new Object[theFields.Length];
                                         int idx = 0;
                                         foreach (FieldInfo fi in theFields)
@@ -21609,7 +21284,7 @@ namespace Isis
                                     }
                                     contents.Add(ba);
                                     payloadLen += ba.Length;
-                                    ctypes[ctindex++] = which;
+                                    ctypes[ctindex++] = (byte)TID;
                                     break;
                                 }
                                 else // An array (easy) or an array of arrays (requires recursion)
@@ -21628,7 +21303,7 @@ namespace Isis
                                     }
                                     // Special case: a 0-length vector of a user-defined object type
                                     ctypes[ctindex++] = NESTED0;
-                                    ba = new byte[] { (byte)which };
+                                    ba = new byte[] { (byte)TID };
                                     contents.Add(ba);
                                     payloadLen += 1;
                                     break;
@@ -21820,7 +21495,6 @@ namespace Isis
         {
             object[] theObs = new object[types.Length];
             object[] obs = BArrayToObjects(true, barray, types);
-            Callable cb = new Callable(del);
 
             if (theObs.Length != obs.Length)
                 return false;
@@ -21829,15 +21503,17 @@ namespace Isis
                 if (obs[j] != null && obs[j].GetType().Equals(types[j]) == false)
                     return false;
 
+            MethodInfo mi;
             if ((IsisSystem.Debug & IsisSystem.CALLBACKS) != 0)
-                Group.ReportCb(cb, obs);
-            cb.doUpcall(obs);
+                Group.ReportCb(del, obs);
+            if ((mi = del.GetType().GetMethod("Invoke")) == null)
+                return false;
+            mi.Invoke(del, obs);
             return true;
         }
 
         internal static void doInvokeArray(Delegate del, List<byte[]> barrays, Type[] types)
         {
-            Callable cb = new Callable(del);
             object[] theObs = new object[types.Length];
             for (int i = 0; i < types.Length; i++)
                 if (types[i].IsArray)
@@ -21854,9 +21530,13 @@ namespace Isis
                         ((Array)theObs[j]).SetValue(obs[j], i);
             }
 
+            MethodInfo mi;
             if ((IsisSystem.Debug & IsisSystem.CALLBACKS) != 0)
-                Group.ReportCb(cb, theObs);
-            cb.doUpcall(theObs);
+                Group.ReportCb(del, theObs);
+            if ((mi = del.GetType().GetMethod("Invoke")) != null)
+                mi.Invoke(del, theObs);
+            else
+                throw new IsisException("Isis.doInvokeSingle: delegate has no Invoke method");
         }
 
         /// <summary>
@@ -24707,6 +24387,7 @@ namespace Isis
         internal LockObject Lock = new LockObject("BoundedBuffer.Lock");
         internal ILock puttingLock;
         internal ILock gettingLock;
+        internal Address gaddr;
 
         internal BoundedBuffer(string s, int sz, int lockLevel, int plockId, int glockId)
         {

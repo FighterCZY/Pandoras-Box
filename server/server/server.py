@@ -83,13 +83,12 @@ def myViewFunc(v):
     print('My rank = ' + v.GetMyRank().ToString())
     for a in v.joiners:
         print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-        # send the new joiner the userstable
     for a in v.leavers:
         print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
     return
 dht.RegisterViewHandler(ViewHandler(myViewFunc))
 dht.Join()
-dht.Send(0, 17)
+
 # res = []
 # nr = dht.Query(Group.ALL, 1, 98.8, EOLMarker(), res);
 # print('After Query got ' + nr.ToString() + ' results: ', res)
@@ -112,7 +111,7 @@ def registerUser(username, publickey):
         g.Reply(False)
     else:
         # add username and bytes used
-        dht.DHTPut('users/'+username, (publickey, 0))
+        dht.DHTPut('users/'+username, pickle.dumps(publickey, 0))
         with users_lock:
             users.add(username)
         g.Reply(True)
@@ -135,8 +134,21 @@ def sendUsers(view):
     g.SendChkpt(data)
     g.EndOfChkpt()
 g.RegisterMakeChkpt(Isis.ChkptMaker(sendUsers))
+
+def myViewFunc(v):
+    if v.IAmLeader():
+        print('New view: ' + v.ToString())
+    print('My rank = ' + v.GetMyRank().ToString())
+    for a in v.joiners:
+        print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+    for a in v.leavers:
+        print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+    return
+g.RegisterViewHandler(ViewHandler(myViewFunc))
+
 g.Join()
 
+dht.Send(0, 17)
 
 
 res = []
