@@ -6074,8 +6074,9 @@ namespace Isis
 
         public delegate void DHTPutMethod(object key, object value);
         public delegate object DHTGetMethod(object key);
+        public delegate object[] DHTKeysMethod();
 
-        internal DHTPutMethod DHTWriterMethod = delegate(object key, object value)
+        internal DHTPutMethod DHTWriter = delegate(object key, object value)
         {
             if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
                 Isis.WriteLine("DHT_PUT: kvp=<" + key + "::" + value + ">");
@@ -6083,7 +6084,7 @@ namespace Isis
                 DHTContents.Remove(key);
             DHTContents.Add(key, value);
         };
-        internal DHTGetMethod DHTReaderMethod = delegate(object key)
+        internal DHTGetMethod DHTReader = delegate(object key)
         {
             if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
                 Isis.WriteLine("DHT_GET: key=<" + key + ">" + ((DHTContents.ContainsKey(key) ? " found (value=" + DHTContents[key] + ")" : " not found")));
@@ -6092,14 +6093,24 @@ namespace Isis
             else
                 return null;
         };
+        internal DHTKeysMethod DHTKeys = delegate()
+        {
+            return DHTContents.Keys.ToArray();
+        };
 
-        public void SetDHTPersistenceMethods(DHTPutMethod writerMethod, DHTGetMethod readerMethod)
+
+        public void SetDHTPersistenceMethods(DHTPutMethod writerMethod, DHTGetMethod readerMethod, DHTKeysMethod keysMethod)
         {
             if (writerMethod != null)
-                DHTWriterMethod = writerMethod;
+                DHTWriter = writerMethod;
             if (readerMethod != null)
-                DHTReaderMethod = readerMethod;
+                DHTReader = readerMethod;
+            if (keysMethod != null)
+                DHTKeys = keysMethod;
         }
+
+        public delegate int DHTAffinityGroup(object o);
+        internal DHTAffinityGroup GetAffinityGroup;
 
         /// <summary>
         /// Puts the current group into DHT mode. 
@@ -6125,6 +6136,10 @@ namespace Isis
                 myDHTInDebugMode = true;
             else if (ReplicationFactor < 3 || myDHTBinSize < 2)
                 throw new IsisException("DHTEnable: Replication factor must be >= 3 and (ExpectedGroupSize / ReplicationFactor) must be > 1");
+            GetAffinityGroup = delegate(object o)
+            {
+                return o.GetHashCode() % myDHTBinSize;
+            };
             doRegister(Isis.IM_DHT_PUT, (IMAddDel)delegate(byte[] kvp)
             {
                 object[] obs = Msg.BArrayToObjects(kvp);
@@ -6140,7 +6155,7 @@ namespace Isis
                 }
                 using (new LockAndElevate(DHTLock))
                 {
-                    DHTWriterMethod(key, value);
+                    DHTWriter(key, value);
                 }
             });
             doRegister(Isis.IM_DHT_GET, (IMRemDel)delegate(byte[] kba)
@@ -6151,7 +6166,7 @@ namespace Isis
                 int khash = key.GetHashCode();
                 using (new LockAndElevate(DHTLock))
                 {
-                    doReply(DHTReaderMethod(key) ?? new byte[0]);
+                    doReply(DHTReader(key) ?? new byte[0]);
                 }
             });
             myDHTBinSize = ReplicationFactor;
@@ -6178,7 +6193,11 @@ namespace Isis
             });
             RegisterMakeChkpt((ChkptMaker)delegate(View v)
             {
-                SendChkpt(Msg.toBArray(DHTContents.Keys.ToArray()), Msg.toBArray(DHTContents.Values.ToArray()));
+                object[] keys = DHTKeys();
+                object[] values = new object[keys.Length];
+                for (int i = 0; i < keys.Length; i++)
+                    values[i] = DHTReader(keys[i]);
+                SendChkpt(Msg.toBArray(keys), Msg.toBArray(values));
                 EndOfChkpt();
             });
             RegisterLoadChkpt((DHTChkptLoader)delegate(byte[] kba, byte[] vba)
@@ -6186,18 +6205,8 @@ namespace Isis
                 object[] keys = Msg.BArrayToObjects(kba);
                 object[] values = Msg.BArrayToObjects(vba);
                 for (int i = 0; i < keys.Length; i++)
-                    DHTContents.Add(keys[i], values[i]);
+                    DHTWriter(keys[i], values[i]);
             });
-        }
-
-        private int GetAffinityGroup(Address a)
-        {
-            return a.GetHashCode() % myDHTBinSize;
-        }
-
-        private int GetAffinityGroup(long key)
-        {
-            return key.GetHashCode() % myDHTBinSize;
         }
 
         // Create something that looks like the group address but indicates the AffinityGroup via the port numbers
@@ -6341,6 +6350,203 @@ namespace Isis
         /// <returns>The value from the (key,value) pair</returns>
         /// <remarks>DHT operations are reliable but not totally ordered, hence DHTRemove for a key shouldn't be issued concurrently with DHTPut operations using the identical key.</remarks>
         public void DHTRemove(object key)
+        {
+            DHTPut(key, new byte[0]);
+        }
+
+
+        // need to lock this thing
+        internal LinkedList<Address> DHT2Ring = new LinkedList<Address>();
+        // add in sorted order
+        internal void DHT2AddToRing(Address a)
+        {
+            if (DHT2Ring.Count == 0)
+            {
+                DHT2Ring.AddFirst(a);
+            }
+            else
+            {
+                LinkedListNode<Address> start = DHT2Ring.First;
+                LinkedListNode<Address> cur = start.Next;
+                while (start != cur && a.GetHashCode() > cur.Value.GetHashCode())
+                {
+                    cur = cur.Next;
+                }
+                DHT2Ring.AddBefore(cur, a);
+            }
+
+        }
+        // Gets the chain of addresses for a hash value
+        internal Address[] DHT2GetAddress(int hash, int length)
+        {
+            Address[] output = new Address[length];
+            LinkedListNode<Address> start = DHT2Ring.First;
+            LinkedListNode<Address> cur = start.Next;
+            while (start != cur && hash > cur.Value.GetHashCode())
+            {
+                cur = cur.Next;
+            }
+            for (int i = 0; i < length; i++)
+            {
+                output[i] = cur.Value;
+                cur = cur.Next;
+            }
+            return output;
+        }
+
+        internal delegate void DHT2ChkptLoader(byte[] aba);
+        /// <summary>
+        /// A better DHT using consistent hashing and chain replication
+        /// </summary>
+        /// <param name="ReplicationFactor"></param>
+        public void DHT2Enable(int ReplicationFactor)
+        {
+            if (myDHTBinSize != 0)
+                throw new IsisException("Can't call DHTEnable more than once for the same group");
+            myDHTBinSize = ReplicationFactor;
+            doRegister(Isis.IM_DHT_PUT, (IMAddDel)delegate(byte[] kvp)
+            {
+                object[] obs = Msg.BArrayToObjects(kvp);
+                object key = obs[0];
+                object value = obs[1];
+                // Filter if not for my affinity group; won't occur in TCP_ONLY mode
+                if (!DHT2GetAddress(key.GetHashCode(), ReplicationFactor).Contains(Isis.my_address))
+                {
+                    if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                        Isis.WriteLine("DHT_PUT hander: filtering and ignoring a put to a different affinity group");
+                    return;
+                }
+                using (new LockAndElevate(DHTLock))
+                {
+                    DHTWriter(key, value);
+                }
+            });
+            doRegister(Isis.IM_DHT_GET, (IMRemDel)delegate(byte[] kba)
+            {
+                if ((flags & G_SECURE) != 0)
+                    kba = decipherBuf(kba);
+                object key = Msg.BArrayToObjects(kba)[0];
+                using (new LockAndElevate(DHTLock))
+                {
+                    doReply(DHTReader(key) ?? new byte[0]);
+                }
+            });
+            ViewHandlers += (ViewHandler)delegate(View v)
+            {
+                // add a new node to ring, transfer appropiate files to node and delete some stuff (maybe)
+                // remove a node from ring, get data from another node about new stuff
+            };
+            // send DHT2Ring
+            RegisterMakeChkpt((ChkptMaker)delegate(View v)
+            {
+                Address[] addresses = DHT2Ring.ToArray();
+                SendChkpt(Msg.toBArray(addresses));
+                EndOfChkpt();
+            });
+            // load DHT2Ring
+            RegisterLoadChkpt((DHT2ChkptLoader)delegate(byte[] aba)
+            {
+                Address[] addresses = (Address [])Msg.BArrayToObjects(aba);
+                DHT2Ring = new LinkedList<Address>(addresses);
+            });
+        }
+
+        /// <summary>
+        /// Uses the current group as a DHT and stores a new (key,value) pair, which overwrites any previous one.  
+        /// </summary>
+        /// <param name="key">key for the object being stored</param>
+        /// <param name="value">value of that object</param>
+        /// <remarks>DHT put operations aren't totally ordered, hence concurrent Add requests for the same key leave the DHT in an inconsistent state.</remarks>
+        public void DHT2Put(object key, object value)
+        {
+            if (myDHTBinSize == 0)
+                throw new IsisException("DHTPut: must first call DHTEnable");
+            int khash = key.GetHashCode();
+            FlowControl.FCBarrierCheck();
+            byte[] ba = Msg.toBArray(key, value);
+            Address[] addresses = DHT2GetAddress(khash, myDHTBinSize);
+            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                Isis.WriteLine("Application called DHTPut with key=" + key + ", value=" + value + ", converts to " + ba.Length + " byte vector");
+            Address last = null;
+            for (int i = 0; i < addresses.Length; i++)
+            {
+                if (last == addresses[i])
+                    break;
+                last = addresses[i];
+                P2PSend(addresses[i], Isis.IM_DHT_PUT, ba);
+            }
+        }
+
+
+        /// <summary>
+        /// Treats the the current group as a DHT and retrieves an object by key
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns>The value from the (key,value) pair</returns>
+        public object DHT2Get(object key)
+        {
+            if (myDHTBinSize == 0)
+                throw new IsisException("DHTPut: must first call DHTEnable");
+            int khash = key.GetHashCode();
+            byte[] ba = Msg.toBArray(key);
+            if ((flags & G_SECURE) != 0)
+                ba = cipherBuf(ba);
+            if ((IsisSystem.Debug & IsisSystem.DHTS) != 0)
+                Isis.WriteLine("Application called DHTGet with key=" + key);
+
+            int N = theView.members.Length, myBase = theView.GetMyRank(), startAt = rand.Next(N), log2N = log2(N), kgrp = GetAffinityGroup(khash);
+
+            // TODO: Finish writing this
+            Address whoToAsk = null;
+            Address dontAsk = null;
+            // Note: this logic only makes sense for at most 2 tries!
+            for (int retry = 0; retry < 2 && dontAsk != Isis.my_address; retry++)
+            {
+                try
+                {
+                    if (GetAffinityGroup(Isis.my_address) == kgrp)
+                        whoToAsk = Isis.my_address;
+                    else
+                    {
+                        // First check and see if there happens to be a 1-hop neighbor we could ask
+                        for (int n = 0; whoToAsk == null && n < log2N; n++)
+                            if (GetAffinityGroup(theView.members[(myBase + (1 << n)) % N]) == kgrp && (dontAsk == null || !theView.members[(myBase + (1 << n)) % N].Equals(dontAsk)))
+                                whoToAsk = theView.members[(myBase + (1 << n)) % N];
+                    }
+
+                    // If no luck, check starting at some random location and just take anyone in the right affinity group
+                    for (int n = 0; whoToAsk == null && n < theView.members.Length; n++)
+                        if (GetAffinityGroup(theView.members[(startAt + n) % N]) == kgrp && (dontAsk == null || !theView.members[(startAt + n) % N].Equals(dontAsk)))
+                            whoToAsk = theView.members[(startAt + n) % N];
+
+                    if (whoToAsk == null)
+                        throw new IsisException("DHT can't find anyone to ask about key=" + key);
+
+                    byte[] answer = P2PQueryToBarray(whoToAsk, Isis.IM_DHT_GET, ba);
+                    if (answer.Length == 0)
+                    {
+                        // Occurs if this dest. failed while waiting for reply from him
+                        dontAsk = whoToAsk;
+                        continue;
+                    }
+                    return Msg.BArrayToObjects(answer)[0];
+                }
+                catch (IsisAbortReplyException)
+                {
+                    Isis.WriteLine("DHTGet: AbortReplyException!");
+                    dontAsk = whoToAsk;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Removes the value associated with the key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns>The value from the (key,value) pair</returns>
+        /// <remarks>DHT operations are reliable but not totally ordered, hence DHTRemove for a key shouldn't be issued concurrently with DHTPut operations using the identical key.</remarks>
+        public void DHT2Remove(object key)
         {
             DHTPut(key, new byte[0]);
         }
@@ -7735,7 +7941,7 @@ namespace Isis
         /// </remarks>
         internal void RegisterChkptChoser(Delegate choser)
         {
-            if (theChkptChoser != null && theChkptChoser != choser)
+            if (theChkptChoser != null && theChkptChoser != ((ChkptChoser)choser))
                 throw new IsisException("RegisterChkptChoser: Attempt to register two checkpoint chosers for group <" + gname + ">");
             theChkptChoser = (ChkptChoser)choser;
         }

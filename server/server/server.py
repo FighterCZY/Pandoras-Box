@@ -4,6 +4,7 @@ import hashlib
 import os
 import array
 import cPickle as pickle # alternatively pickle
+from System import Func, Action
 
 # add ISIS
 clr.AddReference('isis2.dll')
@@ -21,7 +22,7 @@ IsisSystem.Start()
 print('Isis started')
 
 
-g = Group('FooBar')
+dht = Group('DHT')
 
 # this is already locked by ISIS
 DHTDict = dict()
@@ -54,10 +55,14 @@ def DHTReaderMethod(key):
                 return f.read()
         except IOError:
             return null
-g.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod))
 
-g.DHTEnable(1, 1, 1) # For debug only
-#g.DHTEnable(3, 6, 6) # For production testing
+def DHTKeysMethod():
+    return DHTDict.keys() # TODO: add disk files
+
+dht.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod), Group.DHTKeysMethod(DHTKeysMethod))
+
+dht.DHTEnable(1, 1, 1) # For debug only
+#dht.DHTEnable(3, 6, 6) # For production testing
 
 
 def myfunc(i):
@@ -65,13 +70,35 @@ def myfunc(i):
     return
 def myRfunc(r):
     print('Hello from myRfunc with r=' + r.ToString())
-    g.Reply(-1)
+    dht.Reply(-1)
     return
 
-#g.RegisterHandler(0, IsisDelegate[int](myfunc))
-#g.RegisterHandler(1, IsisDelegate[float](myRfunc))
+dht.RegisterHandler(0, IsisDelegate[int](myfunc))
+#dht.RegisterHandler(1, IsisDelegate[float](myRfunc))
 
 
+def myViewFunc(v):
+    if v.IAmLeader():
+        print('New view: ' + v.ToString())
+    print('My rank = ' + v.GetMyRank().ToString())
+    for a in v.joiners:
+        print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+        # send the new joiner the userstable
+    for a in v.leavers:
+        print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+    return
+dht.RegisterViewHandler(ViewHandler(myViewFunc))
+dht.Join()
+dht.Send(0, 17)
+# res = []
+# nr = dht.Query(Group.ALL, 1, 98.8, EOLMarker(), res);
+# print('After Query got ' + nr.ToString() + ' results: ', res)
+# res2 = []
+# nr = dht.Query(Group.ALL, 0, 98, EOLMarker(), res2);
+# print('After Query got ' + nr.ToString() + ' results: ', res2)
+
+
+g = Group('all')
 REGISTER_USER = 0
 SEND_USERS = 1
 # check that a username is valid and not taken
@@ -85,60 +112,56 @@ def registerUser(username, publickey):
         g.Reply(False)
     else:
         # add username and bytes used
-        g.DHTPut('users/'+username, (publickey, 0))
+        dht.DHTPut('users/'+username, (publickey, 0))
         with users_lock:
             users.add(username)
         g.Reply(True)
 g.RegisterHandler(REGISTER_USER, IsisDelegate[str, str](registerUser))
 
-def sendUsers(serial):
+
+def loadUsers(serial):
     # because isis uses a weird serializer Y U NO PROTOCOLBUFFER/THRIFT?!?!
     set = pickle.loads(serial)
     with users_lock:
         # do an update in case we got some stuff before the master replied
         users.update(set)
+    print 'loaded users'
     return
-g.RegisterHandler(SEND_USERS, IsisDelegate[str](sendUsers))
+g.RegisterLoadChkpt(IsisDelegate[str](loadUsers))
 
-def myViewFunc(v):
-    if v.IAmLeader():
-        print('New view: ' + v.ToString())
-    print('My rank = ' + v.GetMyRank().ToString())
-    for a in v.joiners:
-        print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-        # send the new joiner the userstable
-        with users_lock:
-            data = pickle.dumps(users)
-        g.P2PSend(a, SEND_USERS, data)
-    for a in v.leavers:
-        print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-    return
-g.RegisterViewHandler(ViewHandler(myViewFunc))
+def sendUsers(view):
+    with users_lock:
+        data = pickle.dumps(users)
+    g.SendChkpt(data)
+    g.EndOfChkpt()
+g.RegisterMakeChkpt(Isis.ChkptMaker(sendUsers))
 g.Join()
-# g.Send(0, 17)
-# res = []
-# nr = g.Query(Group.ALL, 1, 98.8, EOLMarker(), res);
-# print('After Query got ' + nr.ToString() + ' results: ', res)
-# res2 = []
-# nr = g.Query(Group.ALL, 0, 98, EOLMarker(), res2);
-# print('After Query got ' + nr.ToString() + ' results: ', res2)
+
+
+
+res = []
+g.Query(Group.ALL, REGISTER_USER, "newuser", "pubkey", EOLMarker(), res)
+print res
 
 
 def DHTGet(key):
-    x = g.DHTGet(key)
+    x = dht.DHTGet(key)
     if x:
         return x
     else:
         return None
 
-g.DHTPut("abc", "123")
+dht.DHTPut("abc", "123")
 print DHTGet("abc")
 
 value = "blah blah"
 key = "data/"+hashlib.sha1(value).hexdigest()
-g.DHTPut(key, value)
+dht.DHTPut(key, value)
 print DHTGet(key)
 
+key = "users/test"
+dht.DHTRemove(key)
+print DHTGet(key)
 
 
 t = threading.Thread(target=IsisSystem.WaitForever)
