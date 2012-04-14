@@ -83,7 +83,10 @@ def updatePrevious():
     storeDirectory(getCurrentDirectory())
 
 def getPreviousDirectory():
-    return pickle.load(fopen('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE))
+    if not fexists('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE):
+        return getCurrentDirectory()
+    else:
+        return pickle.load(fopen('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE))
 
 def checkForAddModify(currentDirectory, oldDirectory):
     for path,hash in currentDirectory.iteritems():
@@ -108,6 +111,8 @@ def synchronize():
 def compareDirectories(currentDirectory=None, oldDirectory=None):
     if currentDirectory == None:
         currentDirectory = getCurrentDirectory()
+        
+    pprint.pprint(currentDirectory)
     if oldDirectory == None:
         oldDirectory = getPreviousDirectory()
         
@@ -166,7 +171,7 @@ class observerEventHandler(FileSystemEventHandler):
             _method_map[event_type](event) 
          
 event_handler = observerEventHandler(set(['*'+REMOTE_DIR_SNAPSHOT_FILE,'*'+BUFFER_DIR+'*','*chunkcrypter.py*','*observer.py*']))
-observer = Observer() 
+observer = Observer()
 observer.schedule(event_handler, path='.', recursive=True) 
 
 if __name__ == "__main__":
