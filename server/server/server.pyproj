@@ -5,8 +5,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{536351bd-21ff-45e0-b798-dc746e795f13}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>server.py</StartupFile>
-    <SearchPath>C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Debug</SearchPath>
+    <StartupFile>Server.py</StartupFile>
+    <SearchPath>C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Debug\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <InterpreterId>80659ab7-4d53-4e0c-8588-a766116cbd46</InterpreterId>
     <LaunchProvider>IronPython (.NET) launcher</LaunchProvider>
@@ -24,7 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="server.py" />
+    <None Include="Server.py" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="isis2, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
@@ -33,6 +33,11 @@
       <HintPath>..\..\isis2\isis2\bin\Debug\isis2.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="httpd.py" />
+    <Compile Include="IsisWrapper.py" />
+    <Compile Include="RPC.py" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
 </Project>
