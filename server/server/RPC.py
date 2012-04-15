@@ -1,6 +1,6 @@
 import threading
 import DocXMLRPCServer
-import SimpleXMLRPCServer
+#import SimpleXMLRPCServer
 
 class RequestHandler(DocXMLRPCServer.DocXMLRPCRequestHandler):
     pass

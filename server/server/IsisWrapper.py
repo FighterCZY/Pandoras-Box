@@ -3,6 +3,7 @@ import clr
 import hashlib
 import os
 import cPickle as pickle # alternatively pickle
+
 # add ISIS
 clr.AddReference('isis2.dll')
 from System import Environment
@@ -30,15 +31,11 @@ def DHTWriterMethod(key, value):
     elif parts[0] == 'files':
         return #IMPLEMENT ME
     elif parts[0] == 'data':
-        hex = hashlib.sha1(value).hexdigest()
-        # Ensure that the location is a sha1 of the value
-        if parts[1] == hex:
-            # Create directory if does't exist
-            dir = os.path.dirname(key)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-            with open(str(key), 'w') as f:
-                f.write(str(value))
+        dir = os.path.dirname(key)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        with open(str(key), 'w') as f:
+            f.write(str(value))
 
 def DHTReaderMethod(key):
     parts = str(key).split('/')

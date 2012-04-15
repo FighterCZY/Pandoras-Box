@@ -35,7 +35,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="httpd.py" />
     <Compile Include="IsisWrapper.py" />
     <Compile Include="RPC.py" />
   </ItemGroup>
