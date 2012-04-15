@@ -1,0 +1,10 @@
+C:\Users\Harrison\Desktop\djlawler-ironpycrypto-9ef44f70dd5e\IronPyCrypto\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Harrison\Desktop\djlawler-ironpycrypto-9ef44f70dd5e\IronPyCrypto\bin\Debug\IronPyCrypto.dll
+C:\Users\Harrison\Desktop\djlawler-ironpycrypto-9ef44f70dd5e\IronPyCrypto\bin\Debug\IronPyCrypto.pdb
+C:\Users\Harrison\Desktop\djlawler-ironpycrypto-9ef44f70dd5e\IronPyCrypto\obj\x86\Debug\IronPyCrypto.dll
+C:\Users\Harrison\Desktop\djlawler-ironpycrypto-9ef44f70dd5e\IronPyCrypto\obj\x86\Debug\IronPyCrypto.pdb
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\bin\Debug\IronPyCrypto.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\bin\Debug\IronPyCrypto.pdb
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\obj\x86\Debug\IronPyCrypto.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\obj\x86\Debug\IronPyCrypto.pdb
