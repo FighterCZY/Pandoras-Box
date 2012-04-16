@@ -27,44 +27,81 @@ def checkSignature(username, signature, data):
     return instance.verify(data, (signature,))
 
 # RPC Functions
+class RPCFunctions:
+    def registerUser(self, username, publickey):
+        """ Register a username and publickey.
+        Returns True if success, False otherwise
+        """
+        res = []
+        Isis.users.SafeQuery(Isis.Isis.Group.ALL, Isis.REGISTER_USER, username, publickey, Isis.Isis.EOLMarker(), res)
+        # returns whether they all succeeded
+        return (min(res) == True)
 
-def registerUser(username, publickey):
-    res = []
-    Isis.users.SafeQuery(Isis.Isis.Group.ALL, Isis.REGISTER_USER, username, publickey, Isis.Isis.EOLMarker(), res)
-    print res
-RPC.register_function(registerUser)
+    def registerKey(self, username, signature, privatekey):
+        """ Register a private key with a user
+        Requires signature of privatekey
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, privatekey):
+            return False
+        putKey("keys/"+str(username), privatekey)
+        return True
 
-def getUser(username):
-    return getKey("users/"+str(username))
-RPC.register_function(getUser)
+    def getUser(self, username):
+        """ Get public key of user
+        Returns publickey
+        """
+        return getKey("users/"+str(username))
 
-def updateFile(username, signature, data):
-    if not checkSignature(username, signature, data):
-        return
-    putKey("files/"+str(username), data)
-RPC.register_function(updateFile)
+    def updateFile(self, username, signature, data):
+        """ Update file list of user
+        Requires signature of data
+        Data should be encrypted
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, data):
+            return False
+        putKey("files/"+str(username), data)
+        return True
 
-def poll(username):
-    return getKey("files/"+str(username))
-RPC.register_function(poll)
+    def poll(self, username):
+        """ Get file list of user
+        Returns filelist (encrypted)
+        """
+        return getKey("files/"+str(username))
 
-def addData(username, signature, key, data):
-    if not checkSignature(username, signature, key):
-        return
-    putKey("data/"+str(key), data)
-RPC.register_function(addData)
+    def addData(self, username, signature, key, data):
+        """ Add a block of data to a user
+        Requires signature of key
+        Key should be unique reference for block (sha1 hash)
+        Data should be encrypted
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        putKey("data/"+str(key), data)
+        return True
 
-def removeData(username, signature, key):
-    if not checkSignature(username, signature, key):
-        return
-    removeKey("data/"+str(key))
-RPC.register_function(removeData)
+    def removeData(self, username, signature, key):
+        """ Remove a block of data from user
+        Requires signature of key
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        removeKey("data/"+str(key))
+        return True
 
-def getData(username, signature, key):
-    if not checkSignature(username, signature, key):
-        return
-    return getKey("data/"+str(username)+"/"+str(key))
-RPC.register_function(getData)
+    def getData(self, username, signature, key):
+        """ Get a block of data from user
+        Requires signature of key
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        return getKey("data/"+str(username)+"/"+str(key))
+
+RPC.register_instance(RPCFunctions())
 
 # test function
 RPC.register_function(pow)

@@ -27,8 +27,10 @@ def DHTWriterMethod(key, value):
     parts = str(key).split('/')
     if parts[0] == 'users':
         DHTDict[key] = value
+    elif parts[0] == 'keys':
+        DHTDict[key] = value
     elif parts[0] == 'files':
-        return #IMPLEMENT ME
+        DHTDict[key] = value
     elif parts[0] == 'data':
         dir = os.path.dirname(key)
         if not os.path.exists(dir):
@@ -40,8 +42,10 @@ def DHTReaderMethod(key):
     parts = str(key).split('/')
     if parts[0] == 'users':
         return DHTDict.get(key)
+    elif parts[0] == 'keys':
+        return DHTDict.get(key)
     elif parts[0] == 'files':
-        return #IMPLEMENT ME
+        return DHTDict.get(key)
     elif parts[0] == 'data':
         try:
             with open(str(key), 'r') as f:
