@@ -7,6 +7,7 @@ import cPickle as pickle # alternatively pickle
 # add ISIS
 clr.AddReference('isis2.dll')
 from System import Environment
+from System import Func, Action
 #Environment.SetEnvironmentVariable("ISIS_TCP_ONLY", "true")
 Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
 # Silence output
