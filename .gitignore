@@ -1,4 +1,4 @@
 *.tmp
 *.log
 *.pyc
-
+server/server/data/*

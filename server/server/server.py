@@ -1,30 +1,17 @@
 import threading
 import array
 from Crypto.PublicKey import RSA
+from Crypto.Util.number import long_to_bytes, bytes_to_long
 
 import IsisWrapper as Isis
 #import httpd
 import RPC
 
-def getKey(key):
-    x = Isis.dht.DHTGet(key)
-    if x:
-        return x
-    else:
-        return None
-
-def putKey(key, value):
-    Isis.dht.DHTPut(key, value)
-    return
-
-def removeKey(key):
-    Isis.dht.DHTRemove(key)
-    return
 
 def checkSignature(username, signature, data):
-    publickey = getKey("users/"+username)
+    publickey = Isis.getUserKey(username)
     instance = RSA.importKey(publickey)
-    return instance.verify(data, (signature,))
+    return instance.verify(data, (bytes_to_long(signature),))
 
 # RPC Functions
 class RPCFunctions:
@@ -32,10 +19,7 @@ class RPCFunctions:
         """ Register a username and publickey.
         Returns True if success, False otherwise
         """
-        res = []
-        Isis.users.SafeQuery(Isis.Isis.Group.ALL, Isis.REGISTER_USER, username, publickey, Isis.Isis.EOLMarker(), res)
-        # returns whether they all succeeded
-        return (min(res) == True)
+        return Isis.registerUser(username, publickey)
 
     def registerKey(self, username, signature, privatekey):
         """ Register a private key with a user
@@ -44,14 +28,14 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, privatekey):
             return False
-        putKey("keys/"+str(username), privatekey)
+        Isis.putKey("keys/"+str(username), privatekey)
         return True
 
     def getUser(self, username):
         """ Get public key of user
         Returns publickey
         """
-        return getKey("users/"+str(username))
+        return Isis.getUserKey(username)
 
     def updateFile(self, username, signature, data):
         """ Update file list of user
@@ -61,14 +45,14 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, data):
             return False
-        putKey("files/"+str(username), data)
+        Isis.putKey("files/"+str(username), data)
         return True
 
     def poll(self, username):
         """ Get file list of user
         Returns filelist (encrypted)
         """
-        return getKey("files/"+str(username))
+        return Isis.getKey("files/"+str(username))
 
     def addData(self, username, signature, key, data):
         """ Add a block of data to a user
@@ -79,7 +63,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        putKey("data/"+str(key), data)
+        Isis.putKey("data/"+str(key), data)
         return True
 
     def removeData(self, username, signature, key):
@@ -89,7 +73,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        removeKey("data/"+str(key))
+        Isis.removeKey("data/"+str(key))
         return True
 
     def getData(self, username, signature, key):
@@ -99,7 +83,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        return getKey("data/"+str(username)+"/"+str(key))
+        return Isis.getKey("data/"+str(username)+"/"+str(key))
 
 RPC.register_instance(RPCFunctions())
 

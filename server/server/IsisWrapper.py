@@ -19,133 +19,153 @@ from Isis import *
 IsisSystem.Start()
 print('Isis started')
 
-dht = Group('DHT')
+class IsisImplementation():
+    # Isis function constants
+    REGISTER_USER = 0
 
-# this is already locked by ISIS
-DHTDict = dict()
-def DHTWriterMethod(key, value):
-    parts = str(key).split('/')
-    if parts[0] == 'users':
-        DHTDict[key] = value
-    elif parts[0] == 'keys':
-        DHTDict[key] = value
-    elif parts[0] == 'files':
-        DHTDict[key] = value
-    elif parts[0] == 'data':
-        dir = os.path.dirname(key)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        with open(str(key), 'w') as f:
-            f.write(str(value))
+    def __init__(self):
+        self.__initdht__();
+        self.__initusers__();
 
-def DHTReaderMethod(key):
-    parts = str(key).split('/')
-    if parts[0] == 'users':
-        return DHTDict.get(key)
-    elif parts[0] == 'keys':
-        return DHTDict.get(key)
-    elif parts[0] == 'files':
-        return DHTDict.get(key)
-    elif parts[0] == 'data':
-        try:
-            with open(str(key), 'r') as f:
-                return f.read()
-        except IOError:
-            return null
-
-def DHTKeysMethod():
-    return DHTDict.keys() # TODO: add disk files
-
-dht.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod), Group.DHTKeysMethod(DHTKeysMethod))
-
-dht.DHTEnable(1, 1, 1) # For debug only
-#dht.DHTEnable(3, 6, 6) # For production testing
+    def __initdht__(self):
+        self.dht = Group('DHT')
 
 
-def myfunc(i):
-    print('Hello from myfunc with i=' + i.ToString())
-    return
-def myRfunc(r):
-    print('Hello from myRfunc with r=' + r.ToString())
-    dht.Reply(-1)
-    return
+        # this is already locked by ISIS
+        DHTDict = dict()
+        def DHTWriterMethod(key, value):
+            parts = str(key).split('/')
+            #if parts[0] == 'users':
+            #    DHTDict[key] = value
+            if parts[0] == 'keys':
+                DHTDict[key] = value
+            elif parts[0] == 'files':
+                DHTDict[key] = value
+            elif parts[0] == 'data':
+                dir = os.path.dirname(key)
+                if not os.path.exists(dir):
+                    os.makedirs(dir)
+                with open(str(key), 'w') as f:
+                    f.write(str(value))
 
-#dht.RegisterHandler(0, IsisDelegate[int](myfunc))
-#dht.RegisterHandler(1, IsisDelegate[float](myRfunc))
+        def DHTReaderMethod(key):
+            parts = str(key).split('/')
+            #if parts[0] == 'users':
+            #    return DHTDict.get(key)
+            if parts[0] == 'keys':
+                return DHTDict.get(key)
+            elif parts[0] == 'files':
+                return DHTDict.get(key)
+            elif parts[0] == 'data':
+                try:
+                    with open(str(key), 'r') as f:
+                        return f.read()
+                except IOError:
+                    return null
 
+        def DHTKeysMethod():
+            return DHTDict.keys() # TODO: add disk files
 
-def myViewFunc(v):
-    if v.IAmLeader():
-        print('New view: ' + v.ToString())
-    print('My rank = ' + v.GetMyRank().ToString())
-    for a in v.joiners:
-        print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-    for a in v.leavers:
-        print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-    return
-dht.RegisterViewHandler(ViewHandler(myViewFunc))
-dht.Join()
+        self.dht.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod), Group.DHTKeysMethod(DHTKeysMethod))
 
-# dht.Send(0, 17)
-# res = []
-# nr = dht.Query(Group.ALL, 1, 98.8, EOLMarker(), res);
-# print('After Query got ' + nr.ToString() + ' results: ', res)
-# res2 = []
-# nr = dht.Query(Group.ALL, 0, 98, EOLMarker(), res2);
-# print('After Query got ' + nr.ToString() + ' results: ', res2)
-
-
-users = Group('users')
-REGISTER_USER = 0
-SEND_USERS = 1
-# check that a username is valid and not taken
-users_lock = threading.Lock()
-users_set = set()
-# return True if able to register user
-def registerUser(username, publickey):
-    with users_lock:
-        in_table = username in users_set
-    if in_table:
-        users.Reply(False)
-    else:
-        # add username and bytes used
-        dht.DHTPut('users/'+username, pickle.dumps(publickey, 0))
-        with users_lock:
-            users_set.add(username)
-        users.Reply(True)
-users.RegisterHandler(REGISTER_USER, IsisDelegate[str, str](registerUser))
+        self.dht.DHTEnable(1, 1, 1) # For debug only
+        #self.dht.DHTEnable(3, 6, 6) # For production testing
 
 
-def loadUsers(serial):
-    # because isis uses a weird serializer Y U NO PROTOCOLBUFFER/THRIFT?!?!
-    set = pickle.loads(serial)
-    with users_lock:
-        # do an update in case we got some stuff before the master replied
-        users_set.update(set)
-    print 'loaded users'
-    return
-users.RegisterLoadChkpt(IsisDelegate[str](loadUsers))
+        def myViewFunc(v):
+            if v.IAmLeader():
+                print('New view: ' + v.ToString())
+            print('My rank = ' + v.GetMyRank().ToString())
+            for a in v.joiners:
+                print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+            for a in v.leavers:
+                print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+            return
+        self.dht.RegisterViewHandler(ViewHandler(myViewFunc))
+        self.dht.Join()
+    
+    def __initusers__(self):
+        self.users = Group('users')
+        # check that a username is valid and not taken
+        self.users_lock = threading.Lock()
+        self.users_list = dict()
+        # return True if able to register user
+        def registerUser(username, publickey):
+            with self.users_lock:
+                in_table = username in self.users_list
+                if in_table:
+                    reply = False
+                else:
+                    self.users_list[username] = publickey
+                    reply = True
+            self.users.Reply(reply)
+        self.users.RegisterHandler(self.REGISTER_USER, IsisDelegate[str, str](registerUser))
 
-def sendUsers(view):
-    with users_lock:
-        data = pickle.dumps(users_set)
-    users.SendChkpt(data)
-    users.EndOfChkpt()
-users.RegisterMakeChkpt(Isis.ChkptMaker(sendUsers))
 
-def myViewFunc(v):
-    if v.IAmLeader():
-        print('New view: ' + v.ToString())
-    print('My rank = ' + v.GetMyRank().ToString())
-    for a in v.joiners:
-        print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-    for a in v.leavers:
-        print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-    return
-users.RegisterViewHandler(ViewHandler(myViewFunc))
+        def loadUsers(serial):
+            # because isis uses a weird serializer Y U NO PROTOCOLBUFFER/THRIFT?!?!
+            set = pickle.loads(serial)
+            with self.users_lock:
+                # do an update in case we got some stuff before the master replied
+                self.users_list.update(set)
+            print 'loaded users'
+            return
+        self.users.RegisterLoadChkpt(IsisDelegate[str](loadUsers))
 
-users.Join()
+        def sendUsers(view):
+            with self.users_lock:
+                data = pickle.dumps(self.users_list)
+            self.users.SendChkpt(data)
+            self.users.EndOfChkpt()
+        self.users.RegisterMakeChkpt(Isis.ChkptMaker(sendUsers))
 
+        def myViewFunc(v):
+            if v.IAmLeader():
+                print('New view: ' + v.ToString())
+            print('My rank = ' + v.GetMyRank().ToString())
+            for a in v.joiners:
+                print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+            for a in v.leavers:
+                print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
+            return
+        self.users.RegisterViewHandler(ViewHandler(myViewFunc))
+
+        self.users.Join()
+
+    # Public Methods
+    def registerUser(self, username, publickey):
+        res = []
+        # reserves the username by checking if its already taken
+        self.users.SafeQuery(Group.ALL, self.REGISTER_USER, username, publickey, EOLMarker(), res)
+        # returns whether they all succeeded
+        success = (min(res) == True)
+        return success
+
+    def getUserKey(self, username):
+        with self.users_lock:
+            return self.users_list.get(username)
+
+    def getKey(self, key):
+        x = self.dht.DHTGet(key)
+        if x:
+            return x
+        else:
+            return None
+
+    def putKey(self, key, value):
+        self.dht.DHTPut(key, value)
+        return
+
+    def removeKey(self, key):
+        self.dht.DHTRemove(key)
+        return
+
+_impl = IsisImplementation()
+registerUser = _impl.registerUser
+getUserKey = _impl.getUserKey
+getKey = _impl.getKey
+putKey = _impl.putKey
+removeKey = _impl.removeKey
 
 t = threading.Thread(target=IsisSystem.WaitForever)
 t.daemon = True
