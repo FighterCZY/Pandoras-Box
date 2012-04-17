@@ -100,7 +100,7 @@ class IsisImplementation():
                     self.users_list[username] = publickey
                     reply = True
             self.users.Reply(reply)
-        self.users.RegisterHandler(self.REGISTER_USER, IsisDelegate[str, str](registerUser))
+        self.users.RegisterHandler(self.REGISTER_USER, Action[str, str](registerUser))
 
 
         def loadUsers(serial):
@@ -111,7 +111,7 @@ class IsisImplementation():
                 self.users_list.update(set)
             print 'loaded users'
             return
-        self.users.RegisterLoadChkpt(IsisDelegate[str](loadUsers))
+        self.users.RegisterLoadChkpt(Action[str](loadUsers))
 
         def sendUsers(view):
             with self.users_lock:

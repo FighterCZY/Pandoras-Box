@@ -344,97 +344,34 @@ namespace Isis
     internal delegate void osdel(int vid, int mid, bool flag, Msg m);
     internal delegate void DHTChkptLoader(byte[] kba, byte[] oba);
 
-    // Used for IronPython only
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate();
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0>(t0 a0);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1>(t0 a0, t1 a1);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2>(t0 a0, t1 a1, t2 a2);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3>(t0 a0, t1 a1, t2 a2, t3 a3);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13, t14 a14);
-    /// <ignore>
-    /// </ignore>
-    public delegate void IsisDelegate<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15>(t0 a0, t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7, t8 a8, t9 a9, t10 a10, t11 a11, t12 a12, t13 a13, t14 a14, t15 a15);
-
-    internal delegate void VoidNoArg();
-
     internal class Callable
     {
         internal int nParams;
         internal Type[] ptypes;
         internal Delegate hisCb;
         internal Delegate cb;
-        internal static MethodInfo cdel = getCDmi();
  
         internal Callable(Delegate hisCb)
         {
             this.hisCb = hisCb;
-            ParameterInfo[] pi = hisCb.Method.GetParameters();
+            ParameterInfo[] pi = hisCb.GetType().GetMethod("Invoke").GetParameters();
             ptypes = pi.Select(p => p.ParameterType).ToArray();
             nParams = ptypes.Length;
-            // If the CreateDelegate overload needed by the system doesn't exist, just use the old .Invoke approach...
-            if(cdel == null)
-                return;
-            // On .NET 4.5 and beyond we can create the desired delegate
-            if (nParams == 0)
-                // cb = Delegate.CreateDelegate(typeof(VoidNoArg), hisCb.Target, hisCb.Method, false);
-                cb = (Delegate)cdel.Invoke(cdel, new object[] { typeof(VoidNoArg), hisCb.Target, hisCb.Method, false });
-            else if (nParams <= 16)
+            try
             {
-                Console.WriteLine(System.Linq.Expressions.Expression.GetActionType(ptypes));
-                Console.WriteLine(hisCb.GetType());
-                Console.WriteLine(hisCb.Method);
-                cb = Delegate.CreateDelegate(System.Linq.Expressions.Expression.GetActionType(ptypes), hisCb.Target, hisCb.Method, false);
-                //cb = (Delegate)cdel.Invoke(cdel, new object[] { System.Linq.Expressions.Expression.GetActionType(ptypes), hisCb.Target, m, false });
+                if (nParams == 0)
+                    cb = Delegate.CreateDelegate(typeof(Action), hisCb.Target, hisCb.Method, false);
+                else if (nParams <= 16)
+                {
+                    cb = Delegate.CreateDelegate(System.Linq.Expressions.Expression.GetActionType(ptypes), hisCb.Target, hisCb.Method, false);
+                }
             }
-        }
-
-        // This code handles older version of .NET that lack the needed CreateDelegate overload...  yuck!
-        private static MethodInfo getCDmi()
-        {
-            MethodInfo mi = typeof(Delegate).GetMethod("CreateDelegate", new Type[] { typeof(Type), typeof(object), typeof(MethodInfo), typeof(bool) });
-            return mi;
+            // If we get a "MethodInfo must be a runtime MethodInfo object." error, use old way, otherwise propegate exception
+            catch (ArgumentException e)
+            {
+                if (!e.ParamName.Equals("method"))
+                    throw;
+            }
         }
 
         internal void doUpcall(object[] args)
@@ -494,7 +431,10 @@ namespace Isis
                         break;
                 }
             else
-                hisCb.DynamicInvoke((dynamic)args);
+            {
+                MethodInfo mi = hisCb.GetType().GetMethod("Invoke");
+                mi.Invoke(hisCb, args);
+            }
         }
     }
 
@@ -4646,14 +4586,14 @@ namespace Isis
         public class CallBack
         {
             internal bool withLock;
-            internal Delegate cbProc;
+            internal Callable cbProc;
 
             /// <exclude>
             /// <summary>
             /// Callback constructor, internal
             /// </summary>
             /// </exclude>
-            public CallBack(bool wl, Delegate d) { withLock = wl; cbProc = d; }
+            public CallBack(bool wl, Delegate d) { withLock = wl; cbProc = new Callable(d); }
         }
 
         internal class VHCallBack
