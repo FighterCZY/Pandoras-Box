@@ -379,57 +379,7 @@ namespace Isis
             if (args.Length != nParams)
                 throw new ArgumentException("Argument count must match number of parameters");
             if (cb != null)
-                switch (nParams)
-                {
-                    case 0:
-                        ((dynamic)cb).Invoke();
-                        break;
-                    case 1:
-                        ((dynamic)cb).Invoke((dynamic)args[0]);
-                        break;
-                    case 2:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1]);
-                        break;
-                    case 3:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2]);
-                        break;
-                    case 4:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3]);
-                        break;
-                    case 5:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4]);
-                        break;
-                    case 6:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5]);
-                        break;
-                    case 7:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6]);
-                        break;
-                    case 8:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7]);
-                        break;
-                    case 9:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8]);
-                        break;
-                    case 10:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9]);
-                        break;
-                    case 11:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10]);
-                        break;
-                    case 12:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[1]);
-                        break;
-                    case 13:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12]);
-                        break;
-                    case 14:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12], (dynamic)args[13]);
-                        break;
-                    case 15:
-                        ((dynamic)cb).Invoke((dynamic)args[0], (dynamic)args[1], (dynamic)args[2], (dynamic)args[3], (dynamic)args[4], (dynamic)args[5], (dynamic)args[6], (dynamic)args[7], (dynamic)args[8], (dynamic)args[9], (dynamic)args[10], (dynamic)args[11], (dynamic)args[12], (dynamic)args[13], (dynamic)args[14]);
-                        break;
-                }
+                ((dynamic)cb).DynamicInvoke(args.Select(s => (dynamic)s).ToArray());
             else
             {
                 MethodInfo mi = hisCb.GetType().GetMethod("Invoke");
