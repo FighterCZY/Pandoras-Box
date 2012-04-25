@@ -5,9 +5,10 @@ import os
 import cPickle as pickle # alternatively pickle
 
 # add ISIS
-clr.AddReference('isis2.dll')
+clr.AddReferenceToFileAndPath("isis2.dll")
+
 from System import Environment
-from System import Func, Action
+from System import Array, Func, Action
 #Environment.SetEnvironmentVariable("ISIS_TCP_ONLY", "true")
 Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
 # Silence output
@@ -65,7 +66,10 @@ class IsisImplementation():
                     return null
 
         def DHTKeysMethod():
-            return DHTDict.keys() # TODO: add disk files
+            files = []
+            for d in os.listdir('data'):
+                files.append('data/'+d)
+            return Array[object](DHTDict.keys() + files) # TODO: add disk files
 
         self.dht.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod), Group.DHTKeysMethod(DHTKeysMethod))
 
@@ -120,14 +124,8 @@ class IsisImplementation():
             self.users.EndOfChkpt()
         self.users.RegisterMakeChkpt(Isis.ChkptMaker(sendUsers))
 
+        # Don't print anything. DHT group already prints stuff
         def myViewFunc(v):
-            if v.IAmLeader():
-                print('New view: ' + v.ToString())
-            print('My rank = ' + v.GetMyRank().ToString())
-            for a in v.joiners:
-                print(' Joining: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
-            for a in v.leavers:
-                print(' Leaving: ' + a.ToString() + ', isMyAddress='+a.isMyAddress().ToString())
             return
         self.users.RegisterViewHandler(ViewHandler(myViewFunc))
 

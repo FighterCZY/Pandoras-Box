@@ -1,3 +1,8 @@
+import clr
+import sys
+
+clr.AddReferenceToFileAndPath("IronPyCrypto.dll")
+
 import threading
 import array
 from Crypto.PublicKey import RSA
