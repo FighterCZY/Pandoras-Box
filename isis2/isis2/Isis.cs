@@ -1,4 +1,4 @@
-// Isis2 System, V1.1.$Rev: 827 $, Developed by Kenneth P. Birman, (c) 2010, 2011. all rights reserved.
+// Isis2 System, V1.1.$Rev: 844 $, Developed by Kenneth P. Birman, (c) 2010, 2011. all rights reserved.
 //       This code is subject to copyright and other intellectual property restrictions and
 //       may be used only under license from Dr. Birman or his designated agents.
 //
@@ -59,12 +59,13 @@
 //       Isis has its own locking infrastructure for coarse-grained long-lived locks; use these for that sort of thing
 // ********************************************************************************************
 
-// #define MONO                            // Set if compiling on Mono
+//#define MONO_MODE                       // Set if compiling on Mono
+//#define MONODROID_MODE                    // VN - Set if compiling on Mono for Android
 
 // The DEFINEs that follow are useful in debugging but not for production runs.  Some can be VERY slow
 // #define TRACKLOCKINFO                   // If defined, tracks lock information, warns about apparent deadlocks or priority inversions
 // #define TRACKLOCKINGORDER               // If both are defined, watches for potential lock ordering issues (e.g. usually any single thread locks A before B, but now B was locked, then A)
-// #define EXTRACTCALLSTACKS               // A risky and expensive .NET mechanism that can extract the call stack but sometimes seems to trigger deadlocks or other exceptions
+//#define EXTRACTCALLSTACKS               // A risky and expensive .NET mechanism that can extract the call stack but sometimes seems to trigger deadlocks or other exceptions
 // #define NONLOCALSTACKTRACES             // If defined, Isis will sometimes print stack traces of seemingly stuck threads but for this uses a deprecated API and sometimes malfunctions (which is why they deprecated it!)
 
 
@@ -506,15 +507,20 @@ namespace Isis
         internal static int ISIS_MAXDIRECTSENDS = 10;           // If a group has more than this many members, and a UDP-only multicast is attempted, Isis switches to an overlay multicast
         internal static long ISIS_MAXMSGLEN = 32 * 1024;          // Not used in TCP_ONLY mode.  Otherwise, we recommend keeping this fairly small to avoid excessive "memory pressure" on the kernel
         internal static long ISIS_MAXMSGLENTOTAL = 256 * (ISIS_MAXMSGLEN);  // Maximum size for data sent in an Send, OrderedSend or SafeSend, needed because Isis flow control can malfunction with extremely large objects
-        internal static bool ISIS_TCP_ONLY = false;             // If true, forces UNICAST_ONLY mode and sends all data over TCP point-to-point connection.  Requires ISIS_HOSTS
         internal static bool ISIS_MD5SIGS = true;               // If true, Isis uses MD5 signatures to sign every marshalled object, and won't demarshall (hence won't accept) unsigned messages
         internal static byte[] ISIS_AESKEY;                     // If provided, Isis encrypts the MD5 signatures with this key
         internal static Aes ISIS_AES;
         internal static LockObject ISIS_AES_LOCK = new LockObject("ISIS_AES_LOCK");
         internal static Random ISIS_AESSEED;                    // Used to seed the initialization vector employed by AES
-        internal static string ISIS_HOSTS = "";                 // If non-empty, the names of nodes where ORACLE instances can be found (if any are running)
-        //internal static string ISIS_HOSTS = "Ken-PC";         // If non-empty, the names of nodes where ORACLE instances can be found (if any are running)
+#if MONODROID_MODE
+        internal static bool ISIS_TCP_ONLY = true;             // If true, forces UNICAST_ONLY mode and sends all data over TCP point-to-point connection.  Requires ISIS_HOSTS
+        internal static string ISIS_HOSTS = StaticItems.ipAddress;   // VN - the staticItems.ipaddress is the ip address entered in the Android App login screen
+#else
+        internal static bool ISIS_TCP_ONLY = false;             // If true, forces UNICAST_ONLY mode and sends all data over TCP point-to-point connection.  Requires ISIS_HOSTS
+        internal static string ISIS_HOSTS = "";               // If non-empty, the names of nodes where ORACLE instances can be found (if any are running)
+        //internal static string ISIS_HOSTS = "KenMacBookPro";         // If non-empty, the names of nodes where ORACLE instances can be found (if any are running)
         //internal static string ISIS_HOSTS = "KenT7500";        // If non-empty, the names of nodes where ORACLE instances can be found (if any are running)
+#endif
         internal static bool ISIS_UNICAST_ONLY = false;         // If true, Isis uses no IPMC at all, even for startup.  (Value of MAXIPMCADDRS ignored in this case)
         internal static byte[] ISIS_HDR = Msg.StringToBytes("->ISIS<-");
         internal static bool ISIS_LOG_CREATED = false;
@@ -1085,12 +1091,19 @@ namespace Isis
 
                 if (ipAddress == null) throw new IsisException("Isis: This machine has no IPV4 address");
 
+                //VN - change on Android - storing the log file in the external storage directory in the Android device.
                 if (ISIS_LOGGED && ISIS_LOG_CREATED == false)
                 {
-#if !MONO_MODE
+#if MONO_MODE
+                        string fname = "./OUT/ISIS-" + ipAddress.ToString() + "-" + my_pid + ".log";
+#elif MONODROID_MODE // !MONO_MODE but MONODROID_MODE
+                    string sdCardPath = null;
+                    sdCardPath = Android.OS.Environment.ExternalStorageDirectory.ToString();
+                    System.IO.Directory.CreateDirectory(sdCardPath + "/" + ISIS_LOGDIR);
+
+                    string fname = Path.Combine(Android.OS.Environment.ExternalStorageDirectory.Path + "/" + ISIS_LOGDIR, "ISIS-" + my_pid + ".log");
+#else
                     string fname = ISIS_LOGDIR + "\\ISIS-" + my_pid + ".log";
-#else // !MONO_MODE
-                    string fname = "./OUT/ISIS-" + ipAddress.ToString() + "-" + my_pid + ".log";
 #endif // !MONO_MODE
                     try
                     {
@@ -1099,9 +1112,14 @@ namespace Isis
                     catch { }
                     try
                     {
+#if !MONODROID_MODE
                         my_logstream = new FileStream(fname, FileMode.CreateNew);
+#else
+                        my_logstream = new FileStream(fname, FileMode.Create, FileAccess.Write, FileShare.Write);//VN - the file should have wrtie access
+#endif
+
                         ISIS_LOG_CREATED = true;
-                        string rev = "$Rev: 827 $";
+                        string rev = "$Rev: 844 $";
                         int idx;
                         if ((idx = rev.IndexOf(' ')) != -1)
                         {
@@ -1143,7 +1161,13 @@ namespace Isis
                         }
                         Isis.ArrayResize<string>(ref which, n);
                     }
+                    //VN - change on Android - getNetworkInterfaces() does not execute on Mono for android.
+#if MONODROID_MODE
+                    InterfaceIds = new int[0];
+#else
                     InterfaceIds = ReliableSender.getNetworkInterfaces(which);
+#endif
+
                     if ((IsisSystem.Debug & IsisSystem.INTERFACES) != 0)
                     {
                         Isis.Write("ISIS_NETWORK_INTERFACES = <");
@@ -3730,8 +3754,8 @@ namespace Isis
 
         private static void WaitUntilIsisIsRunning(bool justOracle)
         {
-            int howLong = Isis.SLAVE_MODE ? 120 : 60;  // Seconds: Worker will wait 2 minutes; others 30 seconds
-            howLong *= 4 * 1000;
+            int howLong = Isis.SLAVE_MODE ? 120 : 30;  // Seconds: Worker will wait 2 minutes; others 30 seconds
+            howLong *= 4;
             for (int n = 0; n < howLong && IsisActive; n++)
             {
                 if (IsisActive && (Isis.ClientOf != null || SafelyGetMyRank(Isis.ORACLE) != -1) && (justOracle || SafelyGetMyRank(Isis.ISISMEMBERS) != -1 && ReliableSender.ResenderThread != null))
@@ -6287,7 +6311,7 @@ namespace Isis
             int myBase = Isis.ISISMEMBERS.theView.GetMyRank(), N = Isis.ISISMEMBERS.theView.members.Length;
             for (int i = 1; i < Isis.ISISMEMBERS.theView.members.Length; i <<= 1)
                 ms += Isis.ISISMEMBERS.theView.members[(i + myBase) % N];
-            string s = "TCP_ONLY TUNNEL STATE for ISISMEMBERS::SkipList = [" + ms + "]\r\n";
+            string s = "TCP_ONLY TUNNEL STATE for ISISMEMBERS::SkipList = [" + ms + "]; myBase=" + myBase + "]\r\n";
             using (new LockAndElevate(hmLock))
                 foreach (KeyValuePair<Address, bool[]> kvp in hmInfo)
                     s += "   " + kvp.Key + " => {" + PHMap(kvp.Value) + "}\r\n";
@@ -6787,12 +6811,41 @@ namespace Isis
             // Surprisingly, the actual rule used is pretty simple looking, until you try and visualize its distributed behavior!
             for (int k = 0; k < hm.Length; k++)
                 if (hm[k])
-                    action(v.members[(myBase + (1 << k)) % N], hm.Length - k + pseudoDepth);
+                    action(v.members[(myBase + (1 << k)) % N], pseudoDepth + 1);
         }
 
-        // This housekeeping method answers the gripping question: do I have any members down the link
-        // from me to the guy at offset 2^k to my right, for k=0...log2(N)?
+        internal static LockObject IPMCNewViewLock = new LockObject("IPMCNewViewLock");
         internal static void IPMCNewView(Address gaddr, View v)
+        {
+            using (new LockAndElevate(IPMCNewViewLock))
+                if (gaddr.Equals(Isis.ISISMEMBERS.gaddr))
+                {
+                    // ISISMEMBERS view changed: recompute everything
+                    Dictionary<Address, bool[]> oldhmInfo;
+                    using (new LockAndElevate(hmLock))
+                    {
+                        hmInfo = new Dictionary<Address, bool[]>();
+                        oldhmInfo = hmInfo;
+                    }
+                    doIPMCNewView(gaddr, v);
+                    foreach (KeyValuePair<Address, bool[]> kvp in oldhmInfo)
+                    {
+                        if (kvp.Key.Equals(gaddr))
+                            continue;
+                        Group g = Group.Lookup(kvp.Key);
+                        if (g == null)
+                            g = TrackingProxyLookup(kvp.Key);
+                        if (g != null && g.HasFirstView)
+                            doIPMCNewView(kvp.Key, g.theView);
+                    }
+                }
+                else
+                    doIPMCNewView(gaddr, v);
+        }
+
+        // This housekeeping method updates the skiplist: true if I have any members down the link
+        // from me to the guy at offset 2^k to my right, for k=0...log2(N), false if not
+        internal static void doIPMCNewView(Address gaddr, View v)
         {
             int myBase = Isis.ISISMEMBERS.theView.GetMyRank(), N = Isis.ISISMEMBERS.theView.members.Length;
             if (myBase == -1)
@@ -7653,7 +7706,7 @@ namespace Isis
         /// dropped from the system (it will throw a "poison" exception).  Similarly, if the member that offers to do the state transfer crashes, the join
         /// will fail, throwing a "join failed" exception.
         /// </remarks>
-        internal void RegisterChkptChoser(Delegate choser)
+        internal void RegisterChkptChoser(ChkptChoser choser)
         {
             if (theChkptChoser != null && theChkptChoser != choser)
                 throw new IsisException("RegisterChkptChoser: Attempt to register two checkpoint chosers for group <" + gname + ">");
@@ -17528,11 +17581,19 @@ namespace Isis
                     if (!RecvFixedlen(si, TCPHdrLen, hdr))
                     {
                         if ((IsisSystem.Debug & IsisSystem.TCPOVERLAY) != 0)
-                            Isis.WriteLine("Connection disrupted when trying to read TCP channel header, closing it");
+                            Isis.WriteLine("Connection disrupted (channel broke) when trying to read TCP channel header, closing it");
                         TCPClose(si, false);
                         break;
                     }
-                    TCPhdr tcphdr = (TCPhdr)Msg.BArrayToObjects(hdr)[0];
+                    object[] hdrAsObjs = Msg.BArrayToObjects(hdr);
+                    if (hdrAsObjs == null || hdrAsObjs.Length == 0)
+                    {
+                        if ((IsisSystem.Debug & IsisSystem.TCPOVERLAY) != 0)
+                            Isis.WriteLine("Connection disrupted (damaged message) when trying to read TCP channel header, closing it");
+                        TCPClose(si, false);
+                        break;
+                    }
+                    TCPhdr tcphdr = (TCPhdr)hdrAsObjs[0];
                     if ((IsisSystem.Debug & IsisSystem.TCPOVERLAY) != 0)
                         Isis.WriteLine("RECEIVED HEADER, command=" + TCPCommands[tcphdr.TCPCommand]);
                     switch (tcphdr.TCPCommand)
@@ -19357,9 +19418,10 @@ namespace Isis
                             oamList.Add(m.UID);
                         }
             }
-            bool[] acked = new bool[maxUID - minUID + 1];
+            bool[] acked = new bool[Math.Min(Isis.ISIS_MAXMSGLEN * 8 / 2, maxUID - minUID + 1)];
             foreach (int uid in oamList)
-                acked[uid - minUID] = true;
+                if ((uid - minUID) < acked.Length)
+                    acked[uid - minUID] = true;
             if ((IsisSystem.Debug & IsisSystem.LOWLEVELMSGS) != 0)
             {
                 string ids = " ";
@@ -19375,8 +19437,6 @@ namespace Isis
                 using (new LockAndElevate(IsisSystem.RTS.Lock))
                     IsisSystem.RTS.ACKsent++;
                 byte[] b = Msg.toBArray(Isis.ISIS_HDR, Isis.my_address, minUID, acked);
-                if (b.Length > Isis.ISIS_MAXMSGLEN)
-                    throw new IsisException("Ack packet became too big to send");
                 IPEndPoint remoteEP = new IPEndPoint(dest.home, dest.ackPort);
                 if (Isis.ISIS_TCP_ONLY)
                     TCPSendTo(dest, b, remoteEP, ACKBB);
@@ -22511,7 +22571,7 @@ namespace Isis
                 {
                     MCMDphysical mp = outBufs[i];
                     if (mp != null && mp.outBuf != null)
-                        mp.outBuf.put(null);
+                        mp.outBuf.put(null, true);
                 }
             }
         }
@@ -24736,9 +24796,13 @@ namespace Isis
 #endif // TRACKLOCKINFO
             bool lockTaken = false;
             long lcount = 0;
+            int tout = 2000;
+#if MONODROID_MODE  //VN - added more time for the timeout in Android.
+            tout = 20000;
+#endif
             for (int time = 0; !lockTaken && time < 5; time++)
             {
-                System.Threading.Monitor.TryEnter(LockedObject, 2000, ref lockTaken);
+                System.Threading.Monitor.TryEnter(LockedObject, tout, ref lockTaken);
                 if (!lockTaken)
                 {
                     string name = "";
