@@ -6,7 +6,7 @@
     <ProjectGuid>{536351bd-21ff-45e0-b798-dc746e795f13}</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>Server.py</StartupFile>
-    <SearchPath>C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Debug\</SearchPath>
+    <SearchPath>C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\bin\Debug\;C:\Users\Harrison\Dropbox\Code\Pandoras-Box\server\server\Crypto\;C:\Users\Harrison\Dropbox\Code\Pandoras-Box\server\server\;C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Debug\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <InterpreterId>80659ab7-4d53-4e0c-8588-a766116cbd46</InterpreterId>
     <LaunchProvider>IronPython (.NET) launcher</LaunchProvider>
@@ -27,6 +27,12 @@
     <None Include="Server.py" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="IronPyCrypto, Version=1.0.4487.36336, Culture=neutral, PublicKeyToken=null">
+      <Name>IronPyCrypto</Name>
+      <AssemblyName>IronPyCrypto.dll</AssemblyName>
+      <HintPath>..\..\ironpycrypto\IronPyCrypto\bin\Debug\IronPyCrypto.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="isis2, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
       <Name>isis2</Name>
       <AssemblyName>isis2.dll</AssemblyName>
@@ -35,7 +41,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="httpd.py" />
     <Compile Include="IsisWrapper.py" />
     <Compile Include="RPC.py" />
   </ItemGroup>

@@ -1,0 +1,5 @@
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\Testing\bin\Release\Testing.exe.config
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\Testing\bin\Release\Testing.exe
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\Testing\bin\Release\IronPyCrypto.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\Testing\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\Testing\obj\x86\Release\Testing.exe

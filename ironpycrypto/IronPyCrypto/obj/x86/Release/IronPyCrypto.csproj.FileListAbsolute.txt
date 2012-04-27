@@ -1,0 +1,3 @@
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\bin\Release\IronPyCrypto.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\ironpycrypto\IronPyCrypto\obj\x86\Release\IronPyCrypto.dll

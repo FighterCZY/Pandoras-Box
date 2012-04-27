@@ -1,50 +1,99 @@
+import clr
+import sys
+
+clr.AddReferenceToFileAndPath("IronPyCrypto.dll")
+
 import threading
 import array
-import hashlib
-from System.Security.Cryptography import RSACryptoServiceProvider, CspParameters
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import long_to_bytes, bytes_to_long
 
 import IsisWrapper as Isis
 #import httpd
 import RPC
 
-cp = CspParameters();
-cp.KeyContainerName = "PandorasKey"
-RSA = RSACryptoServiceProvider(cp)
-RSA.PersistKeyInCsp = True
-#print RSA.ToXmlString(True);
 
-def registerUser(username, publickey):
-    res = []
-    Isis.users.SafeQuery(Isis.Isis.Group.ALL, Isis.REGISTER_USER, username, publickey, Isis.Isis.EOLMarker(), res)
-    print res
-RPC.register_function(registerUser)
+def checkSignature(username, signature, data):
+    publickey = Isis.getUserKey(username)
+    instance = RSA.importKey(publickey)
+    return instance.verify(data, (bytes_to_long(signature),))
 
-def getKey(key):
-    x = Isis.dht.DHTGet(key)
-    if x:
-        return x
-    else:
-        return None
-RPC.register_function(getKey)
+# RPC Functions
+class RPCFunctions:
+    def registerUser(self, username, publickey):
+        """ Register a username and publickey.
+        Returns True if success, False otherwise
+        """
+        return Isis.registerUser(username, publickey)
 
-def putKey(key, value):
-    Isis.dht.DHTPut(key, value)
-    return
-RPC.register_function(putKey)
+    def registerKey(self, username, signature, privatekey):
+        """ Register a private key with a user
+        Requires signature of privatekey
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, privatekey):
+            return False
+        Isis.putKey("keys/"+str(username), privatekey)
+        return True
 
-putKey("abc", "123")
-print getKey("abc")
+    def getUser(self, username):
+        """ Get public key of user
+        Returns publickey
+        """
+        return Isis.getUserKey(username)
 
-value = "blah blah"
-key = "data/"+hashlib.sha1(value).hexdigest()
-putKey(key, value)
-print getKey(key)
+    def updateFile(self, username, signature, data):
+        """ Update file list of user
+        Requires signature of data
+        Data should be encrypted
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, data):
+            return False
+        Isis.putKey("files/"+str(username), data)
+        return True
 
-'''
-key = "users/test"
-Isis.dht.DHTRemove(key)
-print DHTGet(key)
-'''
+    def poll(self, username):
+        """ Get file list of user
+        Returns filelist (encrypted)
+        """
+        return Isis.getKey("files/"+str(username))
+
+    def addData(self, username, signature, key, data):
+        """ Add a block of data to a user
+        Requires signature of key
+        Key should be unique reference for block (sha1 hash)
+        Data should be encrypted
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        Isis.putKey("data/"+str(key), data)
+        return True
+
+    def removeData(self, username, signature, key):
+        """ Remove a block of data from user
+        Requires signature of key
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        Isis.removeKey("data/"+str(key))
+        return True
+
+    def getData(self, username, signature, key):
+        """ Get a block of data from user
+        Requires signature of key
+        Returns True if success, False otherwise
+        """
+        if not checkSignature(username, signature, key):
+            return False
+        return Isis.getKey("data/"+str(username)+"/"+str(key))
+
+RPC.register_instance(RPCFunctions())
+
+# test function
+RPC.register_function(pow)
 
 
 raw_input("Press enter to quit\n")
