@@ -1,6 +1,7 @@
 import clr
 import sys
 
+print sys.path #get load paths
 clr.AddReferenceToFileAndPath("IronPyCrypto.dll")
 
 import threading
