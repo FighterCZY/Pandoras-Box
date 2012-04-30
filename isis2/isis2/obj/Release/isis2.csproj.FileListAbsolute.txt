@@ -1,0 +1,5 @@
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Release\isis2.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\bin\Release\isis2.pdb
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\obj\Release\ResolveAssemblyReference.cache
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\obj\Release\isis2.dll
+C:\Users\Harrison\Dropbox\Code\Pandoras-Box\isis2\isis2\obj\Release\isis2.pdb
