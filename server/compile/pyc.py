@@ -62,7 +62,7 @@ def GenerateExe(name, targetKind, platform, machine, main_module, embed, standal
         
         for a in System.AppDomain.CurrentDomain.GetAssemblies():
             n = AssemblyName(a.FullName)
-            if not a.IsDynamic and not a.EntryPoint and (n.Name.StartsWith("IronPython") or n.Name in ['Microsoft.Dynamic', 'Microsoft.Scripting']):                
+            if not a.IsDynamic and not a.EntryPoint and (n.Name.StartsWith("IronPython") or n.Name in ['Microsoft.Dynamic', 'Microsoft.Scripting', 'isis2', 'IronPyCrypto']):                
                 print "\tEmbedding %s %s" % (n.Name, str(n.Version))
                 f = System.IO.FileStream(a.Location, System.IO.FileMode.Open, System.IO.FileAccess.Read)
                 mb.DefineManifestResource("Dll." + n.Name, f, ResourceAttributes.Public)

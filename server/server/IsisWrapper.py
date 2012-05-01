@@ -5,7 +5,7 @@ import os
 import cPickle as pickle # alternatively pickle
 
 # add ISIS
-clr.AddReferenceToFileAndPath("isis2.dll")
+clr.AddReference("isis2")
 
 from System import Environment
 from System import Array, Func, Action
