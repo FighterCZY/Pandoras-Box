@@ -1,4 +1,5 @@
 import time
+import xmlrpclib
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from watchdog.utils import has_attribute
@@ -9,13 +10,13 @@ import hashlib
 import os, errno
 import pprint
 import pickle
-import chunkcrypter as cc
-from chunkcrypter import REMOTE_DIR_SNAPSHOT_FILE
-from chunkcrypter import BUFFER_DIR
-EVENT_TYPE_MOVED = 'moved'
-EVENT_TYPE_DELETED = 'deleted'
-EVENT_TYPE_CREATED = 'created'
-EVENT_TYPE_MODIFIED = 'modified'
+import chunkcrypter5 as cc
+from chunkcrypter5 import bufferDir
+from chunkcrypter5 import keyDir
+import shutil
+
+
+syncingLocal = False
 
 def fopen(name):
     return open(name)
@@ -29,10 +30,20 @@ def fexists(filename):
         return True
     except IOError as e:
         return False
-
-def pathexists(path):
-    return os.path.exists(path)    
-    
+def fdeletefolder(name):
+    try:
+        shutil.rmtree(name)
+    except:
+        pass
+def fdeletefile(name): 
+    try: 
+        os.remove(name)
+    except:
+        pass
+        #print 'Could not find file: ', name
+def fdelete(name):
+    fdeletefolder(name)
+    fdeletefile(name)
 def mkdir(path):
     try:
         os.makedirs(path)
@@ -40,7 +51,29 @@ def mkdir(path):
         if exc.errno == errno.EEXIST:
             pass
         else: raise
-        
+def touchDirectory(string):
+    mkdir(string)
+def touchRecursiveDirectory(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+''' GET STATE '''
+def getLocalDirectoryState(path=cc.root):
+    directories = {}
+    directoryTuples = os.walk(path)
+    for dirname, dirnames, filenames in directoryTuples:
+        remove_hidden(dirnames) # dynamically changing dirnames so that directoryTuples will reflect removal of all hidden directories
+        for subdirname in dirnames:
+            directories[os.path.join(dirname, subdirname)] = None
+        for filename in filenames:
+            if not filename.startswith('.'): # remove all hidden files
+                path = os.path.join(dirname, filename)
+                directories[path] = {} 
+                directories[path]['md5'] = md5_for_file(os.path.join(dirname, filename))
+                directories[path]['files'] = cc.doChunkCryptPreview(path)
+    return directories
+def remove_hidden(dirlist): # in-place modification of dirlist
+    dirlist[:] = [d for d in dirlist if not d.startswith('.')]
 def md5_for_file(fileName, block_size=2**20):
     f = fopen(fileName)
     md5 = hashlib.md5()
@@ -51,138 +84,101 @@ def md5_for_file(fileName, block_size=2**20):
         md5.update(data)
     return md5.digest()
 
-def touchDirectory(string): 
-    mkdir(string)
+''' POLL: UPDATE LOCAL '''
+def synchronizeLocal(): # Synchronize local state with remote state 
+    global syncingLocal
+    syncingLocal = True
+    remoteState = cc.getRemoteDirectoryStateFake()
+    localState = getLocalDirectoryState()
+    print 'Local State:'
+    pprint.pprint(localState)
+    print 'Remote State:'
+    pprint.pprint(remoteState)
+    
+    addedFiles, modifiedFiles, deletedFiles = compareStates(localState, remoteState)
+    print 'Updating local directory <<<<<<<<-'
+    print addedFiles
+    print '\twere added in remote directory.'
+    print modifiedFiles
+    print '\twere modified in remote directory.'
+    print deletedFiles
+    print '\twere deleted in remote directory.'
+      
+    addRemoteToLocal(addedFiles, localState, remoteState) 
+    addRemoteToLocal(modifiedFiles, localState, remoteState)
+    deleteRemoteFromLocal(deletedFiles, localState, remoteState)
+    syncingLocal = False
+def addRemoteToLocal(filesToAdd, localState, remoteState): # make RPC function calls to get blocks from remote
+    for fileToAdd in filesToAdd:
+        cc.addFileFromRemoteFake(fileToAdd, localState, remoteState)
+def deleteRemoteFromLocal(filesToDelete, localState, remoteState): # delete each file in deletedFiles from local directory
+    for deletedFile in filesToDelete:
+        fdelete(deletedFile)
 
-def remove_hidden(dirlist): # in-place modification of dirlist
-    dirlist[:] = [d for d in dirlist if not d.startswith('.')]
+''' LOCAL MODIFICATION: UPDATE REMOTE '''
+def synchronizeRemote(): # Synchronize remote state with local state
+    remoteState = cc.getRemoteDirectoryStateFake()
+    localState = getLocalDirectoryState()
+    
+    addedFiles, modifiedFiles, deletedFiles = compareStates(remoteState, localState)
+    
+    print 'Updating remote directory ->>>>>>>>>'
+    print addedFiles
+    print '\t being pushed to remote directory.'
+    print modifiedFiles
+    print '\t being pushed to remote directory.'
+    print deletedFiles
+    print '\t being deleted from remote directory.'
+    
+    addLocalToRemote(addedFiles, localState, remoteState)
+    addLocalToRemote(modifiedFiles, localState, remoteState)
+    deleteLocalFromRemote(deletedFiles, localState, remoteState)
+    cc.updateRemoteState(localState)
+def addLocalToRemote(filesToAdd, localState, remoteState): # make RPC function calls to put blocks to remote
+    for fileToAdd in filesToAdd:
+        if os.path.isfile(fileToAdd):
+            cc.addFileToRemoteFake(fileToAdd, localState, remoteState)
+def deleteLocalFromRemote(filesToDelete, localState, remoteState): # delete each file in deletedFiles from remote directory
+    for fileToDelete in filesToDelete:
+        cc.deleteFileFromRemoteFake(fileToDelete, localState, remoteState)
 
-def hidden(string):
-    parts = string.split('/')
-    parts[0] = parts[0].startswith('.')
-    return reduce(lambda x, y: x or y.startswith('.'), parts)
-
-def getCurrentDirectory(path='.'):
-    directories = {}
-    directoryTuples = os.walk(path)
-    for dirname, dirnames, filenames in directoryTuples:
-#        pprint.pprint(dirname) pprint.pprint(dirnames) pprint.pprint(filenames)
-        remove_hidden(dirnames) # dynamically changing dirnames so that directoryTuples will reflect removal of all hidden directories
-        for subdirname in dirnames:
-            directories[os.path.join(dirname, subdirname)] = None
-        for filename in filenames:
-            if not filename.startswith('.'): # remove all hidden files
-                directories[os.path.join(dirname, filename)] = md5_for_file(os.path.join(dirname, filename))
-    return directories
-
-def storeDirectory(directoryDict):
-    touchDirectory('.metadata')
-    pickle.dump(directoryDict, fwrite('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE))
-
-def updatePrevious():
-    storeDirectory(getCurrentDirectory())
-
-def getPreviousDirectory():
-    if not fexists('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE):
-        return getCurrentDirectory()
-    else:
-        return pickle.load(fopen('.metadata/'+REMOTE_DIR_SNAPSHOT_FILE))
-
-def checkForAddModify(currentDirectory, oldDirectory):
-    for path,hash in currentDirectory.iteritems():
-        if not oldDirectory.has_key(path):
+''' STATE COMPARISON '''
+def getAddedFiles(oldDirectory, currentDirectory):
+    addedFiles = []
+    for path,info in currentDirectory.iteritems():
+        if not oldDirectory.has_key(path) and not info is None: # if old directory does not have path, but new one does, then a file has been added.
             print path, 'added.'
-            cc.chunkcrypt(path)
-        else:
-            if not oldDirectory[path] == hash:
+            addedFiles.append(path)
+    return addedFiles
+def getModifiedFiles(oldDirectory, currentDirectory):
+    modifiedFiles = []
+    for path,info in currentDirectory.iteritems():
+        if oldDirectory.has_key(path) and not info is None:
+            if not oldDirectory[path]['md5'] == info['md5']:
                 print path, 'contents modified.'
-                cc.chunkcrypt(path)
-
-def checkForDelete(currentDirectory, oldDirectory):
+                modifiedFiles.append(path)
+    return modifiedFiles
+def getDeletedFiles(oldDirectory, currentDirectory):
+    deletedFiles = []
     for path,hash in oldDirectory.iteritems():
-        if not currentDirectory.has_key(path):
+        if not currentDirectory.has_key(path): # if old directory has a path, but new one doesn't, then a file has been deleted.
             print path, 'deleted.'
-            print 'Notifying server of file delete ...'
+            deletedFiles.append(path)
+    return deletedFiles
+def compareStates(oldState, newState):
+    addedFiles = getAddedFiles(oldState, newState)
+    modifiedFiles = getModifiedFiles(oldState, newState)
+    deletedFiles = getDeletedFiles(oldState, newState)
+    return addedFiles, modifiedFiles, deletedFiles
 
-def synchronize():
-    compareDirectories()
-    updatePrevious()
-
-def compareDirectories(currentDirectory=None, oldDirectory=None):
-    if currentDirectory == None:
-        currentDirectory = getCurrentDirectory()
-        
-    pprint.pprint(currentDirectory)
-    if oldDirectory == None:
-        oldDirectory = getPreviousDirectory()
-        
-    checkForAddModify(currentDirectory, oldDirectory)
-    checkForDelete(currentDirectory, oldDirectory)
-
-class observerEventHandler(FileSystemEventHandler):
-    def __init__(self, ignore_patterns=None):
-        super(observerEventHandler, self).__init__()
-        self._ignore_patterns = ignore_patterns
-    
-    @property
-    def ignore_patterns(self):
-        return self._ignore_patterns
-    
-    """Handle all the events captured."""
-    def on_moved(self, event):
-        super(observerEventHandler, self).on_moved(event)
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Moved %s: from %s to %s", what, event.src_path, event.dest_path)
-        synchronize()
-
-    def on_created(self, event):
-        super(observerEventHandler, self).on_created(event)
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Created %s: %s", what, event.src_path)
-        synchronize()
-
-    def on_deleted(self, event):
-        super(observerEventHandler, self).on_deleted(event)
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Deleted %s: %s", what, event.src_path)
-        synchronize()
-
-    def on_modified(self, event):
-        super(observerEventHandler, self).on_modified(event)
-        what = 'directory' if event.is_directory else 'file'
-        logging.info("Modified %s: %s", what, event.src_path)
-        synchronize()
-        
-    def dispatch(self, event):
-        if has_attribute(event, 'dest_path'):
-            paths = [event.src_path, event.dest_path]
-        else:
-            paths = [event.src_path]
-            
-        if match_any_paths(paths, excluded_patterns=self.ignore_patterns):
-            self.on_any_event(event)
-            _method_map = {
-                EVENT_TYPE_MODIFIED: self.on_modified,
-                EVENT_TYPE_MOVED: self.on_moved,
-                EVENT_TYPE_CREATED: self.on_created,
-                EVENT_TYPE_DELETED: self.on_deleted,
-            }
-            event_type = event.event_type 
-            _method_map[event_type](event) 
-         
-event_handler = observerEventHandler(set(['*'+REMOTE_DIR_SNAPSHOT_FILE,'*'+BUFFER_DIR+'*','*chunkcrypter.py*','*observer.py*']))
-observer = Observer()
-observer.schedule(event_handler, path='.', recursive=True) 
+def initialize():
+    touchDirectory(keyDir)
+    touchDirectory(bufferDir)
 
 if __name__ == "__main__":
-    #logging.basicConfig(level=logging.INFO)
-    synchronize()
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+    initialize()
+    synchronizeLocal()
+#    synchronizeRemote()
+    
     pass
  
