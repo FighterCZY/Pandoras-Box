@@ -3754,7 +3754,7 @@ namespace Isis
 
         private static void WaitUntilIsisIsRunning(bool justOracle)
         {
-            int howLong = Isis.SLAVE_MODE ? 120 : 30;  // Seconds: Worker will wait 2 minutes; others 30 seconds
+            int howLong = Isis.SLAVE_MODE ? 120 : 120;  // Seconds: Worker will wait 2 minutes; others 30 seconds
             howLong *= 4;
             for (int n = 0; n < howLong && IsisActive; n++)
             {

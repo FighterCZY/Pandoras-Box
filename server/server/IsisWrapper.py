@@ -10,11 +10,11 @@ clr.AddReference("isis2")
 from System import Environment
 from System import Array, Func, Action
 #Environment.SetEnvironmentVariable("ISIS_TCP_ONLY", "true")
-#Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
+Environment.SetEnvironmentVariable("ISIS_UNICAST_ONLY", "true")
 # Silence output
 Environment.SetEnvironmentVariable("ISIS_MUTE", "true")
 # add comma separated list of hosts here (master servers)
-#Environment.SetEnvironmentVariable("ISIS_HOSTS", "Abigail,Sherwin-PC")
+Environment.SetEnvironmentVariable("ISIS_HOSTS", "Sherwin-PC")
 import Isis
 from Isis import *
 
