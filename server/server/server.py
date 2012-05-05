@@ -34,7 +34,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, privatekey):
             return False
-        Isis.putKey("keys/"+str(username), privatekey)
+        Isis.putKey(("keys/%s" % username), privatekey)
         return True
 
     def getUser(self, username):
@@ -42,6 +42,12 @@ class RPCFunctions:
         Returns publickey
         """
         return Isis.getUserKey(username)
+
+    def getKey(self, username):
+        """ Get the (encrypted) private key of the user
+        Returns privatekey
+        """
+        return Isis.getKey("keys/%s" % username)
 
     def updateFile(self, username, signature, data):
         """ Update file list of user
@@ -51,14 +57,14 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, data):
             return False
-        Isis.putKey("files/"+str(username), data)
+        Isis.putKey(("files/%s" % username), data)
         return True
 
     def poll(self, username):
         """ Get file list of user
         Returns filelist (encrypted)
         """
-        return Isis.getKey("files/"+str(username))
+        return Isis.getKey("files/%s" % username)
 
     def addData(self, username, signature, key, data):
         """ Add a block of data to a user
@@ -69,7 +75,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        Isis.putKey("data/"+str(key), data)
+        Isis.putKey(("data/%s/%s" % (username, key)), data)
         return True
 
     def removeData(self, username, signature, key):
@@ -79,7 +85,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        Isis.removeKey("data/"+str(key))
+        Isis.removeKey("data/%s" % key)
         return True
 
     def getData(self, username, signature, key):
@@ -89,7 +95,7 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        return Isis.getKey("data/"+str(username)+"/"+str(key))
+        return Isis.getKey("data/%s/%s" % (username, key))
 
 RPC.register_instance(RPCFunctions())
 
