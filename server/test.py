@@ -23,7 +23,10 @@ def addData(data):
   signature = long_to_bytes(signature)
   return s.addData(username, signature, key, data)
 
-print addData(data)
+#print addData(data)
+(signature, ) = rsa.sign("abc", None)
+signature = long_to_bytes(signature)
+print s.getData(username, signature, "abc")
 
 
 

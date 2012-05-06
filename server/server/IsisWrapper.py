@@ -63,7 +63,7 @@ class IsisImplementation():
                     with open(str(key), 'r') as f:
                         return f.read()
                 except IOError:
-                    return null
+                    return None
 
         def DHTKeysMethod():
             files = []
@@ -149,7 +149,7 @@ class IsisImplementation():
         if x:
             return x
         else:
-            return None
+            return False
 
     def putKey(self, key, value):
         self.dht.DHTPut(key, value)

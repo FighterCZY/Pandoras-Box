@@ -62,7 +62,7 @@ class RPCFunctions:
 
     def poll(self, username):
         """ Get file list of user
-        Returns filelist (encrypted)
+        Returns filelist (encrypted) if success, False otherwise
         """
         return Isis.getKey("files/%s" % username)
 
@@ -85,13 +85,13 @@ class RPCFunctions:
         """
         if not checkSignature(username, signature, key):
             return False
-        Isis.removeKey("data/%s" % key)
+        Isis.removeKey("data/%s/%s" % (username, key))
         return True
 
     def getData(self, username, signature, key):
         """ Get a block of data from user
         Requires signature of key
-        Returns True if success, False otherwise
+        Returns data if success, False otherwise
         """
         if not checkSignature(username, signature, key):
             return False
