@@ -16,11 +16,16 @@ import xmlrpclib
 s = xmlrpclib.ServerProxy('http://localhost:8000')
 print s.registerUser(username, publicrsa)
 
+from Crypto.Hash import MD5
+def sign(data):
+  hash = SHA.new(data).digest()
+  (signature, ) = rsa.sign(hash, None)
+  return long_to_bytes(signature)
+
 data = "blahblahblah"
 def addData(data):
   key = SHA.new(data).hexdigest()
-  (signature, ) = rsa.sign(key, None)
-  signature = long_to_bytes(signature)
+  signature = sign(key)
   return s.addData(username, signature, key, data)
 
 #print addData(data)

@@ -8,6 +8,7 @@ import threading
 import array
 from Crypto.PublicKey import RSA
 from Crypto.Util.number import long_to_bytes, bytes_to_long
+from Crypto.Hash import SHA
 
 import IsisWrapper as Isis
 #import httpd
@@ -17,7 +18,8 @@ import RPC
 def checkSignature(username, signature, data):
     publickey = Isis.getUserKey(username)
     instance = RSA.importKey(publickey)
-    return instance.verify(data, (bytes_to_long(signature),))
+    hash = SHA.new(data).digest()
+    return instance.verify(hash, (bytes_to_long(signature),))
 
 # RPC Functions
 class RPCFunctions:
@@ -33,6 +35,7 @@ class RPCFunctions:
         Returns True if success, False otherwise
         """
         if not checkSignature(username, signature, privatekey):
+            print "invalid signature"
             return False
         Isis.putKey(("keys/%s" % username), privatekey)
         return True

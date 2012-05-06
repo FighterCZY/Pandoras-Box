@@ -44,11 +44,12 @@ class IsisImplementation():
             elif parts[0] == 'files':
                 DHTDict[key] = value
             elif parts[0] == 'data':
-                dir = os.path.dirname(key)
-                if not os.path.exists(dir):
-                    os.makedirs(dir)
-                with open(str(key), 'w') as f:
-                    f.write(str(value))
+                DHTDict[key] = value
+                #dir = os.path.dirname(key)
+                #if not os.path.exists(dir):
+                #    os.makedirs(dir)
+                #with open(str(key), 'w') as f:
+                #    f.write(str(value))
 
         def DHTReaderMethod(key):
             parts = str(key).split('/')
@@ -59,16 +60,17 @@ class IsisImplementation():
             elif parts[0] == 'files':
                 return DHTDict.get(key)
             elif parts[0] == 'data':
-                try:
-                    with open(str(key), 'r') as f:
-                        return f.read()
-                except IOError:
-                    return None
+                return DHTDict.get(key)
+                #try:
+                #    with open(str(key), 'r') as f:
+                #        return f.read()
+                #except IOError:
+                #    return None
 
         def DHTKeysMethod():
             files = []
-            for d in os.listdir('data'):
-                files.append('data/'+d)
+            #for d in os.listdir('data'):
+            #    files.append('data/'+d)
             return Array[object](DHTDict.keys() + files) # TODO: add disk files
 
         self.dht.SetDHTPersistenceMethods(Group.DHTPutMethod(DHTWriterMethod), Group.DHTGetMethod(DHTReaderMethod), Group.DHTKeysMethod(DHTKeysMethod))
