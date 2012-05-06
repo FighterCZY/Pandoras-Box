@@ -3,9 +3,10 @@ print 'started'
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA
 from Crypto.Util.number import long_to_bytes, bytes_to_long
+from base64 import b64encode, b64decode
 
 rsa = RSA.generate(1024)
-username = 'abc123'
+username = '321abc'
 
 publicrsa = rsa.exportKey('OpenSSH')
 privatersa = rsa.exportKey('PEM', 'PASSPHRASE')
@@ -28,10 +29,10 @@ def addData(key, data):
   return s.addData(username, signature, key, data)
 
 print addData("abc", data)
-print addData("def", open('awefaf-0.enc').read())
+print addData("def", b64encode(open('awefaf-0.enc').read()))
 
-signature = sign("abc")
-print s.getData(username, signature, "abc")
+print s.getData(username, sign("abc"), "abc")
+print s.getData(username, sign("def"), "def")
 
 
 
