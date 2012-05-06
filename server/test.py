@@ -5,7 +5,7 @@ from Crypto.Hash import SHA
 from Crypto.Util.number import long_to_bytes, bytes_to_long
 
 rsa = RSA.generate(1024)
-username = 'abc'
+username = 'abc123'
 
 publicrsa = rsa.exportKey('OpenSSH')
 privatersa = rsa.exportKey('PEM', 'PASSPHRASE')
@@ -23,14 +23,14 @@ def sign(data):
   return long_to_bytes(signature)
 
 data = "blahblahblah"
-def addData(data):
-  key = SHA.new(data).hexdigest()
+def addData(key, data):
   signature = sign(key)
   return s.addData(username, signature, key, data)
 
-#print addData(data)
-(signature, ) = rsa.sign("abc", None)
-signature = long_to_bytes(signature)
+print addData("abc", data)
+print addData("def", open('awefaf-0.enc').read())
+
+signature = sign("abc")
 print s.getData(username, signature, "abc")
 
 
