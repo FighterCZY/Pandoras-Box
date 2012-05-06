@@ -2,7 +2,9 @@ from rpccommunication import RPCCommunication
 
 rpc = RPCCommunication("username", "passphrase")
 
+print rpc.getUser()
 print rpc.registerUser()
+print rpc.getUser()
 print rpc.registerKey()
 print rpc.addData("somehash", "123")
 poll = rpc.poll()
@@ -15,3 +17,5 @@ print rpc.getData("somehash")
 print rpc.removeData("somehash")
 print rpc.getData("somehash") #should print False
 print rpc.poll()
+
+raw_input("Press enter to quit\n")

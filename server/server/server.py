@@ -27,7 +27,10 @@ class RPCFunctions:
         """ Register a username and publickey.
         Returns True if success, False otherwise
         """
-        return Isis.registerUser(username, publickey)
+        if username and publickey:
+            return Isis.registerUser(username, publickey)
+        else:
+            return False
 
     def registerKey(self, username, signature, privatekey):
         """ Register a private key with a user
@@ -44,7 +47,11 @@ class RPCFunctions:
         """ Get public key of user
         Returns publickey
         """
-        return Isis.getUserKey(username)
+        key = Isis.getUserKey(username)
+        if key:
+            return key
+        else:
+            return False
 
     def getKey(self, username):
         """ Get the (encrypted) private key of the user

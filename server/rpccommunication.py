@@ -18,6 +18,9 @@ class RPCCommunication():
     else:
       self.rsa = RSA.generate(1024)
 
+  def getUser(self):
+    return self.rpc.getUser(self.username)
+      
   def registerUser(self):
     publicrsa = self.rsa.exportKey('OpenSSH')
     return self.rpc.registerUser(self.username, publicrsa)
