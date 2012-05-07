@@ -104,7 +104,7 @@ def list(request):
   output = '<ul>';
   for f in files:
     path, key = f.split(':')
-    output += "<li><a href='/pandora/show?filename=%s'>%s</a></li>" % (key, path)
+    output += "<li><a href='/show?filename=%s'>%s</a></li>" % (key, path)
   return HttpResponse(output)
   #return HttpResponse(simplejson.dumps(files), mimetype='application/json')
   

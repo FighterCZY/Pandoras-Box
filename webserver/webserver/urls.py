@@ -5,12 +5,12 @@ from django.conf.urls import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^pandora$', 'pandora.views.index'),
-    url(r'^pandora/register$', 'pandora.views.register'),
-    url(r'^pandora/login$', 'pandora.views.login'),
-    url(r'^pandora/list$', 'pandora.views.list'),
-    url(r'^pandora/upload$', 'pandora.views.upload'),
-    url(r'^pandora/show$', 'pandora.views.show'),
+    url(r'^$', 'pandora.views.index'),
+    url(r'^register$', 'pandora.views.register'),
+    url(r'^login$', 'pandora.views.login'),
+    url(r'^list$', 'pandora.views.list'),
+    url(r'^upload$', 'pandora.views.upload'),
+    url(r'^show$', 'pandora.views.show'),
     # Examples:
     # url(r'^$', 'webserver.views.home', name='home'),
     # url(r'^webserver/', include('webserver.foo.urls')),
