@@ -5,26 +5,28 @@ Created on Mar 23, 2012
 ''' 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
+from Crypto.Hash import SHA
+from Crypto.Util.number import long_to_bytes, bytes_to_long
 from Crypto.Util.randpool import RandomPool
 import sys, os, errno, glob
 import shutil, struct
 import pickle
 import re, random
+import pprint
+from rpccommunication import RPCCommunication
+from base64 import b64encode, b64decode
+
+serverIP = 'http://128.84.203.136:8000'
+
+username = 'lisherwin4'
+passphrase = 'wuzhang'
 
 root = 'pbox/'
 
-keyDir = root + '.ssh'
-keyPublic = keyDir + '/public.pem'
-keyPrivate = keyDir + '/private.pem'
-
-metadataDir = root + '.metadata'
-metadataRemoteState = metadataDir + '/state'
-
 bufferDir = root + '.blockbuffer'
 
-import observer5 as obs
-
 rpool = RandomPool() 
+rpc = RPCCommunication()
 
 def fopen(name):
     return open(name)
@@ -43,13 +45,11 @@ def fdeletefolder(name):
         shutil.rmtree(name)
     except:
         pass
-        #print 'Could not find folder: ', name
 def fdeletefile(name): 
     try: 
         os.remove(name)
     except:
         pass
-        #print 'Could not find file: ', name
 def fdelete(name):
     fdeletefolder(name)
     fdeletefile(name)
@@ -65,7 +65,10 @@ def touchDirectory(string):
 def touchFile(fname, times = None):
     with file(fname, 'a'):
         os.utime(fname, times)
-        
+
+def hash(path):
+    return SHA.new(path).hexdigest()
+
 ''' Chunk ''' 
 def chunk(fileName):
     touchDirectory(bufferDir)
@@ -94,25 +97,30 @@ def doChunkCryptPreview(fileName, chunk_size=1024):
     return chunkList
     
 def cleanBuffer():
+    print 'Cleaning buffer...'
     fdelete(bufferDir)
 
+'''RPC Calls'''
+def initRemoteState():
+    if rpc.poll() == False:
+        print 'Initializing remote state...'
+        updateRemoteState({})
+    else:
+        print 'Remote state already initialized...'
+def connect():
+    global rpc
+    try: 
+        rpc.loadUser(username, passphrase, True)
+        print 'Existing user!'
+    except:
+        print 'New user!'
+        rpc.loadUser(username, passphrase, False)
+        rpc.registerUser()
+        rpc.registerKey()
+    
+    initRemoteState()
+    
 ''' RSA Keys '''
-def generatePrivPubKey(prefix=''):
-    private = RSA.generate(1024)
-    public = private.publickey()
-    publicKeyFile = fwrite(keyPublic)
-    privateKeyFile = fwrite(keyPrivate)
-    publicKeyFile.write(public.exportKey())
-    privateKeyFile.write(private.exportKey())
-    return private, public
-def pubKeyExists():
-    return fexists(keyPublic)
-def privKeyExists():
-    return fexists(keyPrivate)
-def getPubKey():
-    return fopen(keyPublic)
-def getPrivKey():
-    return fopen(keyPrivate)
 def getFilesToEncrypt(path):
     base = os.path.basename(path)
     fileNames = glob.glob(bufferDir+'/'+base+'*')
@@ -168,7 +176,7 @@ def decrypt(path):
     for fileToDecrypt in filesToDecrypt:
         decrypt_file('0123456789abcdef', fileToDecrypt, fileToDecrypt.rstrip('.enc'))
         fdelete(fileToDecrypt)
-    
+
 def tryint(s):
     try:
         return int(s)
@@ -194,84 +202,67 @@ def mergeBuffer(destination):
     destinationFile.close()
     
 ''' RPC Calls '''
-def addFileFromRemote(fileName):
-    pass
-def deleteFileFromRemote(fileName):
-    pass
-def addFileToRemote(fileName):
-    chunk(fileName)
-    encrypt(fileName)
-    print 'Sending off ... ', fileName # Send it off!
-    cleanBuffer()
-def getRemoteDirectoryState():
-    pass # poll()
-
-''' Tests Faking RPC Calls '''
-remoteDir = 'remote'
-remoteState = remoteDir + '/state'
-
-def initializeRemote():
-    touchDirectory(remoteDir)
-    touchFile(remoteState)
-    
-def getRemoteDirectoryStateFake():
-    try:
-        return pickle.load(fopen(remoteState))
-    except:
-        print 'Remote directory does not hold state. Initializing now.'
-        initializeRemote()
-        pickle.dump({}, fwrite(remoteState))        
-        return {}
-
+''' Helpers '''
+def getRemoteState():
+    return pickle.loads(b64decode(rpc.poll()))
 def updateRemoteState(state):
-    remoteStateFile = fwrite(remoteState)
-    pickle.dump(state, remoteStateFile)
-
+    rpc.updateFile(b64encode(pickle.dumps(state)))
+    
 ''' <<<<<<<- '''
-def getFileFromRemote(chunkCryptToRequestFromRemote, chunk_size=1024):
-    return fopen(remoteDir + '/' + chunkCryptToRequestFromRemote).read()
-def addFileFromRemoteFake(path, localState, remoteState, chunk_size=1024):
-    chunkCryptsToRequestFromRemote = []
+def receiveChunks(path, localState, remoteState):
+    paths = []
     if remoteState.has_key(path):
-        chunkCryptsToRequestFromRemote = remoteState[path]['files']
-    for chunkCryptToRequestFromRemote in chunkCryptsToRequestFromRemote:
-        contents = getFileFromRemote(chunkCryptToRequestFromRemote)
+        paths = remoteState[path]['files']
+    for path in paths:
+        # Receive key/value
+        key = hash(path)
+        value = rpc.getData(key)
+        contents = b64decode(value) 
+        
+        # Prepare output
         touchDirectory(bufferDir)
-        basename = os.path.basename(chunkCryptToRequestFromRemote)
-        chunkCryptFileOnLocal = fwrite(bufferDir + '/' + basename)
-        chunkCryptFileOnLocal.write(contents)
+        basename = os.path.basename(path)
+        chunkCryptFileOnLocal = fwrite(bufferDir + '/' + basename) 
+        
+        # Write to output
+        chunkCryptFileOnLocal.write(contents) 
         chunkCryptFileOnLocal.close()
+def addFileFromRemote(path, localState, remoteState):
+    receiveChunks(path, localState, remoteState)
     decrypt(path)
     mergeBuffer(path)
     cleanBuffer()
+def deleteFileFromRemote(path, localState, remoteState):
+    rpc.removeData(hash(path))
+''' ->>>>>>> '''
+def sendOffChunks(path):
+    # Get files to send off in bufferDir
+    recFileName = os.path.basename(path)
+    bufferPaths = glob.glob(bufferDir + '/' + recFileName + '-*.enc')
+    
+    # Send off each file
+    for bufferPath in bufferPaths:
         
-def deleteFileInLocal(path, localState, remoteState):
-    fdelete(path)
-
-''' ->>>>>>> '''    
-def addFileToRemoteFake(path, localState, remoteState):
-    deleteFileFromRemoteFake(path, localState, remoteState)
+        # Create key
+        dir = os.path.dirname(path)
+        base = os.path.basename(bufferPath)
+        path = dir + '/' + base
+        print 'Encryption block fullpath: '+ path
+        key = hash(path)
+        print 'Key: ' + key
+        
+        # Create value
+        bufferDirFile = fopen(bufferPath)
+        value = b64encode(bufferDirFile.read())
+        print 'Value: ' + value
+        
+        # Send off key/value
+        rpc.addData(key, value)
+def addFileToRemote(path, localState, remoteState):
     chunk(path)
     encrypt(path)
-    
-    baseLocal = os.path.basename(path)
-    dirLocal = os.path.dirname(path) + '/'
-    
-    bufferDirFiles = glob.glob(''.join([bufferDir,'/',baseLocal,'-*.enc']))
-    for bufferDirFileName in bufferDirFiles:
-        obs.touchRecursiveDirectory(remoteDir + '/' + dirLocal)
-        
-        remoteDirFileName = remoteDir + '/' + dirLocal + os.path.basename(bufferDirFileName)
-        remoteDirFile = fwrite(remoteDirFileName)
-        
-        bufferDirFile = fopen(bufferDirFileName)
-        
-        print 'writing ', bufferDirFileName, ' to ', remoteDirFileName
-        remoteDirFile.write(bufferDirFile.read())
-    cleanBuffer()
-def deleteFileFromRemoteFake(path, localState, remoteState):
-    if remoteState.has_key(path):
-        filesToDelete = remoteState[path]['files']
-        for fileToDelete in filesToDelete:
-            fdelete(remoteDir + '/' + fileToDelete)
-    
+    print 'Encrypting ' + path
+    sendOffChunks(path)
+    cleanBuffer()    
+def deleteFileInLocal(path, localState, remoteState):
+    fdelete(path)

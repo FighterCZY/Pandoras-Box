@@ -10,11 +10,10 @@ import hashlib
 import os, errno
 import pprint
 import pickle
-import chunkcrypter5 as cc
-from chunkcrypter5 import bufferDir
-from chunkcrypter5 import keyDir
+import chunkcrypter as cc
+from chunkcrypter import bufferDir
 import shutil
-
+from Crypto.Hash import SHA
 
 syncingLocal = False
 
@@ -57,6 +56,87 @@ def touchRecursiveDirectory(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
+''' OBSERVER >o'''
+class observerEventHandler(FileSystemEventHandler):
+    def __init__(self, ignore_patterns=None, patterns=None):
+        super(observerEventHandler, self).__init__()
+        self._ignore_patterns = ignore_patterns
+        self._patterns = patterns
+     
+    @property
+    def ignore_patterns(self):
+        return self._ignore_patterns
+    
+    @property
+    def patterns(self):
+        return self._patterns
+    
+    """Handle all the events captured."""
+#    def on_moved(self, event):
+#        super(observerEventHandler, self).on_moved(event)
+#        what = 'directory' if event.is_directory else 'file'
+#        logging.info("Moved %s: from %s to %s", what, event.src_path, event.dest_path)
+#        print '=============================================='
+#        print 'Moved ', what, ': ', event.src_path
+#        synchronizeRemote()
+ 
+#    def on_created(self, event):
+#        super(observerEventHandler, self).on_created(event)
+#        what = 'directory' if event.is_directory else 'file'
+#        print '=============================================='
+#        print 'Created ', what, ': ', event.src_path
+#        synchronizeRemote()
+#
+#    def on_deleted(self, event):
+#        super(observerEventHandler, self).on_deleted(event)
+#        what = 'directory' if event.is_directory else 'file'
+#        print '=============================================='
+#        print 'Deleted ', what, ': ', event.src_path
+#        synchronizeRemote() 
+#    def on_modified(self, event):
+#        super(observerEventHandler, self).on_modified(event)
+#        what = 'directory' if event.is_directory else 'file'
+#        print '=============================================='
+#        print 'Modified ', what, ': ', event.src_path
+#        synchronizeRemote()
+    def on_any_event(self, event):
+        global syncingLocal
+        if not syncingLocal:
+            pprint.pprint('Synchronize Remote')
+            synchronizeRemote()
+         
+    def dispatch(self, event):  
+        if has_attribute(event, 'dest_path'):
+            paths = [event.src_path, event.dest_path]
+        else:
+            paths = [event.src_path]
+        if match_any_paths(paths, 
+                           included_patterns=self.patterns, 
+                           excluded_patterns=self.ignore_patterns):
+            self.on_any_event(event)
+
+''' GLOBALS ''' 
+username = ''
+event_handler = observerEventHandler(ignore_patterns=['*'+bufferDir+'*','*chunkcrypter.py*','*observer.py*'], 
+                                     patterns=['*/pbox/*'])
+#event_handler = observerEventHandler(set(['*'+bufferDir+'*']))
+observer = Observer() 
+observer.schedule(event_handler, path='.', recursive=True)    
+
+''' BEGIN FILE EVENTLISTENER '''
+def monitor():
+    counter = 0
+    observer.start() 
+    try:
+        while True:
+            time.sleep(1)
+            counter = (counter + 1) % 10
+            if counter == 0:
+                synchronizeLocal()
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
 ''' GET STATE '''
 def getLocalDirectoryState(path=cc.root):
     directories = {}
@@ -88,7 +168,7 @@ def md5_for_file(fileName, block_size=2**20):
 def synchronizeLocal(): # Synchronize local state with remote state 
     global syncingLocal
     syncingLocal = True
-    remoteState = cc.getRemoteDirectoryStateFake()
+    remoteState = cc.getRemoteState()
     localState = getLocalDirectoryState()
     print 'Local State:'
     pprint.pprint(localState)
@@ -110,14 +190,14 @@ def synchronizeLocal(): # Synchronize local state with remote state
     syncingLocal = False
 def addRemoteToLocal(filesToAdd, localState, remoteState): # make RPC function calls to get blocks from remote
     for fileToAdd in filesToAdd:
-        cc.addFileFromRemoteFake(fileToAdd, localState, remoteState)
+        cc.addFileFromRemote(fileToAdd, localState, remoteState)
 def deleteRemoteFromLocal(filesToDelete, localState, remoteState): # delete each file in deletedFiles from local directory
     for deletedFile in filesToDelete:
         fdelete(deletedFile)
 
 ''' LOCAL MODIFICATION: UPDATE REMOTE '''
 def synchronizeRemote(): # Synchronize remote state with local state
-    remoteState = cc.getRemoteDirectoryStateFake()
+    remoteState = cc.getRemoteState()
     localState = getLocalDirectoryState()
     
     addedFiles, modifiedFiles, deletedFiles = compareStates(remoteState, localState)
@@ -137,10 +217,13 @@ def synchronizeRemote(): # Synchronize remote state with local state
 def addLocalToRemote(filesToAdd, localState, remoteState): # make RPC function calls to put blocks to remote
     for fileToAdd in filesToAdd:
         if os.path.isfile(fileToAdd):
-            cc.addFileToRemoteFake(fileToAdd, localState, remoteState)
+            print 'Adding ' + fileToAdd + ' to remote...'
+            cc.addFileToRemote(fileToAdd, localState, remoteState)
+    print 'Done adding local to remote...'
 def deleteLocalFromRemote(filesToDelete, localState, remoteState): # delete each file in deletedFiles from remote directory
     for fileToDelete in filesToDelete:
-        cc.deleteFileFromRemoteFake(fileToDelete, localState, remoteState)
+        cc.deleteFileFromRemote(fileToDelete, localState, remoteState)
+    print 'Done deleting local from remote...'
 
 ''' STATE COMPARISON '''
 def getAddedFiles(oldDirectory, currentDirectory):
@@ -172,13 +255,17 @@ def compareStates(oldState, newState):
     return addedFiles, modifiedFiles, deletedFiles
 
 def initialize():
-    touchDirectory(keyDir)
+    print 'Touching bufferDir'
     touchDirectory(bufferDir)
+    
+    print 'Connecting...'
+    cc.connect()
 
 if __name__ == "__main__":
     initialize()
-    synchronizeLocal()
-#    synchronizeRemote()
+    monitor()
+#    synchronizeLocal()
+    
     
     pass
  
