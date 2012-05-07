@@ -4,6 +4,8 @@ from django.views.decorators.http import condition
 from django.utils import simplejson
 from django.http import HttpResponse
 
+from Crypto.Hash import SHA
+
 import xmlrpclib
 import json
 from rpccommunication import RPCCommunication
@@ -52,13 +54,16 @@ def login(request):
     return HttpResponse("No username/passphrase")
   
   rpc = RPCCommunication()
-  rpc.loadUser(username, passphrase, existing=True)
+  try:
+    rpc.loadUser(username, passphrase, existing=True)
+  except:
+    return HttpResponse("Invalid username or passphrase")
   
   request.session['username'] = username
   request.session['passphrase'] = passphrase
   request.session['rsa'] = rpc.exportKey()
   
-  return HttpResponse("Logged in successfully %s" % request.session.get('username'))
+  return HttpResponse("Logged in successfully '%s'" % request.session.get('username'))
   
 @condition(etag_func=None)
 def upload(request):
@@ -68,7 +73,7 @@ def upload(request):
     
     #path = "hello"
     #data = "world"
-    key = path
+    key = SHA.new(path).hexdigest()
     
     if not path or not data:
       yield "No path/data"
@@ -76,7 +81,7 @@ def upload(request):
     
     rpc = loadRPC(request)
     files = rpc.poll()
-    yield "<p>Poll: %s</p>" % files
+    yield "<p>Polled</p>"
     yield " " * 1024  # Encourage browser to render incrementally
     
     yield "<p>Add data: %s</p>" % rpc.addData(key, data)
@@ -84,7 +89,6 @@ def upload(request):
     if not files:
       files = ''
     files += "%s:%s\n" % (path, key)
-    yield "<p>New Files: %s</p>" % files
     yield "<p>Update File: %s</p>" % rpc.updateFile(files)
   
   return HttpResponse( stream_response_generator(), mimetype='text/html')
@@ -99,9 +103,8 @@ def list(request):
   files = files.strip().split("\n")
   output = '<ul>';
   for f in files:
-    #path, key = f.split(':')
-    key = f
-    output += "<li><a href='/pandora/show?filename=%s'>%s</a></li>" % (key, f)
+    path, key = f.split(':')
+    output += "<li><a href='/pandora/show?filename=%s'>%s</a></li>" % (key, path)
   return HttpResponse(output)
   #return HttpResponse(simplejson.dumps(files), mimetype='application/json')
   
