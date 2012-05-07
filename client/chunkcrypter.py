@@ -243,7 +243,7 @@ def sendOffChunks(path):
     # Send off each file
     for bufferPath in bufferPaths:
         
-        # Create key
+        # Create key 
         dir = os.path.dirname(path)
         base = os.path.basename(bufferPath)
         path = dir + '/' + base
