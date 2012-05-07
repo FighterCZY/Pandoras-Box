@@ -1,10 +1,11 @@
 from rpccommunication import RPCCommunication
 
-rpc = RPCCommunication("username", "passphrase")
+rpc = RPCCommunication()
+rpc.loadUser("username", "passphrase")
 
-print rpc.getUser()
+print rpc.getUser("username")
 print rpc.registerUser()
-print rpc.getUser()
+print rpc.getUser("username")
 print rpc.registerKey()
 print rpc.addData("somehash", "123")
 poll = rpc.poll()
