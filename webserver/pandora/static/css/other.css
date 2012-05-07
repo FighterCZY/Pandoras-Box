@@ -27,7 +27,7 @@ p {
 }
 .thumbnail {
   position: relative;
-  }
+}
 .thumbnail .caption {
   position: absolute;
   right: 0;
@@ -38,4 +38,12 @@ p {
   background: #282828;
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
+}
+
+iframe {
+  box-sizing:border-box;
+  -moz-box-sizing:border-box; /* Firefox */
+  -webkit-box-sizing:border-box; /* Safari */
+  background-color: #fff;
+  height: 200px;
 }

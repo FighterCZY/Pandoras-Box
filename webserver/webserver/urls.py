@@ -10,6 +10,7 @@ urlpatterns = patterns('',
     url(r'^pandora/login$', 'pandora.views.login'),
     url(r'^pandora/list$', 'pandora.views.list'),
     url(r'^pandora/upload$', 'pandora.views.upload'),
+    url(r'^pandora/show$', 'pandora.views.show'),
     # Examples:
     # url(r'^$', 'webserver.views.home', name='home'),
     # url(r'^webserver/', include('webserver.foo.urls')),
