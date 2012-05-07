@@ -21,12 +21,13 @@
     <div id="navbar" class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
+          <a class="brand" href="#overview">Pandora's Box</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li><a href="/pandora/register?username=abc&passphrase=a">Register</a></li>
-              <li><a href="/pandora/login?username=abc&passphrase=a">Login</a></li>
-              <li><a href="/pandora/upload">Upload</a></li>
-              <li><a href="/pandora/list">List</a></li>
+              <li><a href="#register">Register</a></li>
+              <li><a href="#login">Login</a></li>
+              <li><a href="#upload">Upload</a></li>
+              <li><a href="#list">List</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
@@ -52,7 +53,7 @@
         </div>
         <div class="row">
           <div class="span6">
-            <form class="form" action="/pandora/register" target="register-submit">
+            <form class="form" action="/register" target="register-submit">
               <label for="username">Username</label>
               <input type="text" name="username" />
               <label for="passphrase">Passphrase</label>
@@ -71,7 +72,7 @@
           </div>
           <div class="row">
             <div class="span6">
-              <form class="form" action="/pandora/login" target="login-submit">
+              <form class="form" action="/login" target="login-submit">
                 <label for="username">Username</label>
                 <input type="text" name="username" />
                 <label for="passphrase">Passphrase</label>
@@ -90,12 +91,12 @@
             </div>
             <div class="row">
               <div class="span6">
-                <form class="form" action="/pandora/upload" target="upload-submit">
+                <form class="form" action="/upload" target="upload-submit">
                   <label for="path">Path</label>
-                  <input type="text" name="path" />
+                  <input class="span6" type="text" name="path" />
                   
                   <label for="data">Data</label>
-                  <textarea name="data"></textarea>
+                  <textarea class="span6" name="data"></textarea>
                   <div class="form-actions">
                     <input type="submit" class="btn btn-primary" />
                   </div>
@@ -110,7 +111,7 @@
               </div>
               <div class="row">
               <div class="span6">
-                <form class="form" action="/pandora/list" target="list-submit">
+                <form class="form" action="/list" target="list-submit">
                   <input type="submit" class="btn btn-primary" value="List" />
                 </form>
               </div>
