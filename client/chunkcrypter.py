@@ -18,8 +18,8 @@ from base64 import b64encode, b64decode
 
 serverIP = 'http://128.84.203.136:8000'
 
-username = 'lisherwin4'
-passphrase = 'wuzhang'
+username = 'lisherwin'
+passphrase = 'abc'
 
 root = 'pbox/'
 
@@ -131,7 +131,7 @@ def getFilesToDecrypt(path):
     return fileNames
 
 ''' RSA '''
-def encrypt_file(key, in_filename, out_filename=None, chunksize=1024):
+def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
     if not out_filename:
         out_filename = in_filename + '.enc'
 
@@ -150,10 +150,11 @@ def encrypt_file(key, in_filename, out_filename=None, chunksize=1024):
                 elif len(chunk) % 16 != 0:
                     chunk += ' ' * (16 - len(chunk) % 16)
                 outfile.write(encryptor.encrypt(chunk))
-def decrypt_file(key, in_filename, out_filename=None, chunksize=1024):
+def decrypt_file(key, in_filename, out_filename=None, chunksize=24*1024):
     if not out_filename:
         out_filename = os.path.splitext(in_filename)[0]
-
+    
+    print 'For infile: ' + in_filename + ' of length: ' + str(len(fopen(in_filename).read()))
     with open(in_filename, 'rb') as infile:
         origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]
         iv = infile.read(16)
@@ -161,9 +162,11 @@ def decrypt_file(key, in_filename, out_filename=None, chunksize=1024):
 
         with open(out_filename, 'wb') as outfile:
             while True:
+#                chunk = infile.read(chunksize)
                 chunk = infile.read(chunksize)
                 if len(chunk) == 0:
                     break
+                print 'Chunk length: ' + str(len(chunk))
                 outfile.write(decryptor.decrypt(chunk))
 
             outfile.truncate(origsize)
